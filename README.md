@@ -21,8 +21,9 @@ This project implements an MCP server that exposes SymPy's symbolic mathematics 
 ### Prerequisites
 
 - Elixir 1.19 or later
-- Python 3.x with SymPy installed
 - OpenSSL development libraries
+
+**Note**: Python 3.12 and SymPy are automatically installed during the compilation process.
 
 ### Setup
 
