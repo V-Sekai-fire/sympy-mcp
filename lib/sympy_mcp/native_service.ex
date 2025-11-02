@@ -14,8 +14,8 @@ defmodule SympyMcp.NativeService do
   # Define SymPy tools using ex_mcp DSL
   deftool "sympy_solve" do
     meta do
-      name "Solve Equation"
-      description "Solves a symbolic equation for a variable using SymPy"
+      name("Solve Equation")
+      description("Solves a symbolic equation for a variable using SymPy")
     end
 
     input_schema(%{
@@ -36,8 +36,8 @@ defmodule SympyMcp.NativeService do
 
   deftool "sympy_simplify" do
     meta do
-      name "Simplify Expression"
-      description "Simplifies a symbolic expression using SymPy"
+      name("Simplify Expression")
+      description("Simplifies a symbolic expression using SymPy")
     end
 
     input_schema(%{
@@ -54,8 +54,8 @@ defmodule SympyMcp.NativeService do
 
   deftool "sympy_differentiate" do
     meta do
-      name "Differentiate Expression"
-      description "Computes the derivative of an expression using SymPy"
+      name("Differentiate Expression")
+      description("Computes the derivative of an expression using SymPy")
     end
 
     input_schema(%{
@@ -76,8 +76,8 @@ defmodule SympyMcp.NativeService do
 
   deftool "sympy_integrate" do
     meta do
-      name "Integrate Expression"
-      description "Computes the integral of an expression using SymPy"
+      name("Integrate Expression")
+      description("Computes the integral of an expression using SymPy")
     end
 
     input_schema(%{
@@ -98,8 +98,8 @@ defmodule SympyMcp.NativeService do
 
   deftool "sympy_expand" do
     meta do
-      name "Expand Expression"
-      description "Expands a symbolic expression using SymPy"
+      name("Expand Expression")
+      description("Expands a symbolic expression using SymPy")
     end
 
     input_schema(%{
@@ -116,8 +116,8 @@ defmodule SympyMcp.NativeService do
 
   deftool "sympy_factor" do
     meta do
-      name "Factor Expression"
-      description "Factors a symbolic expression using SymPy"
+      name("Factor Expression")
+      description("Factors a symbolic expression using SymPy")
     end
 
     input_schema(%{
@@ -134,8 +134,8 @@ defmodule SympyMcp.NativeService do
 
   deftool "sympy_evaluate" do
     meta do
-      name "Evaluate Expression"
-      description "Evaluates a symbolic expression numerically using SymPy"
+      name("Evaluate Expression")
+      description("Evaluates a symbolic expression numerically using SymPy")
     end
 
     input_schema(%{
