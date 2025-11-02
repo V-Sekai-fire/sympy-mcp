@@ -16,7 +16,7 @@ defmodule SympyMcp.MixProject do
       dialyzer: [
         ignore_warnings: ".dialyzer_ignore.exs"
       ],
-      test_coverage: [summary: [threshold: 54], ignore_modules: [SympyMcp.NativeService, Mix.Tasks.Mcp.Server]]
+      test_coverage: [summary: [threshold: 75], ignore_modules: [SympyMcp.NativeService, Mix.Tasks.Mcp.Server]]
     ]
   end
 

@@ -392,6 +392,22 @@ defmodule SympyMcp.SympyTools do
     end
   end
 
+  # Test helper functions to expose mock logic for coverage
+  @doc false
+  def test_mock_solve(equation, variable), do: mock_solve(equation, variable)
+  @doc false
+  def test_mock_simplify(expression), do: mock_simplify(expression)
+  @doc false
+  def test_mock_differentiate(expression, variable), do: mock_differentiate(expression, variable)
+  @doc false
+  def test_mock_integrate(expression, variable), do: mock_integrate(expression, variable)
+  @doc false
+  def test_mock_expand(expression), do: mock_expand(expression)
+  @doc false
+  def test_mock_factor(expression), do: mock_factor(expression)
+  @doc false
+  def test_mock_evaluate(expression, substitutions), do: mock_evaluate(expression, substitutions)
+
   defp mock_evaluate(expression, substitutions) do
     case {expression, substitutions} do
       {"x + 1", %{"x" => 5}} -> {:ok, 6}

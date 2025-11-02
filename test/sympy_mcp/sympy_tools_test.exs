@@ -101,38 +101,50 @@ defmodule SympyMcp.SympyToolsTest do
   end
 
   describe "mock fallback functions" do
-    # Test mock functions by calling them directly since they're private
-    # We can test the mock logic by examining the pattern matching
+    # Test the mock functions directly to increase coverage
+    # These functions are normally only called when Pythonx is unavailable
 
     test "mock_solve handles known equations" do
-      # We can't directly call private functions, but we can verify the logic
-      # by testing that when Pythonx fails, the right mock results are returned
-      # For now, we'll test this indirectly through integration
-      assert true # Placeholder - will be replaced with proper integration test
+      assert {:ok, ["-2", "2"]} = SympyTools.test_mock_solve("x**2 - 4", "x")
+      assert {:ok, ["-1", "1"]} = SympyTools.test_mock_solve("x**2 - 1", "x")
+      assert {:ok, ["-1"]} = SympyTools.test_mock_solve("x + 1", "x")
+      assert {:ok, ["Mock solution for unknown eq solved for x"]} = SympyTools.test_mock_solve("unknown eq", "x")
     end
 
     test "mock_simplify handles known expressions" do
-      assert true # Placeholder
+      assert {:ok, "2*x"} = SympyTools.test_mock_simplify("x + x")
+      assert {:ok, "x**2"} = SympyTools.test_mock_simplify("x * x")
+      assert {:ok, "Mock simplified: unknown"} = SympyTools.test_mock_simplify("unknown")
     end
 
     test "mock_differentiate handles known derivatives" do
-      assert true # Placeholder
+      assert {:ok, "2*x"} = SympyTools.test_mock_differentiate("x**2", "x")
+      assert {:ok, "3*x**2"} = SympyTools.test_mock_differentiate("x**3", "x")
+      assert {:ok, "Mock derivative of unknown w.r.t. x"} = SympyTools.test_mock_differentiate("unknown", "x")
     end
 
     test "mock_integrate handles known integrals" do
-      assert true # Placeholder
+      assert {:ok, "x**2/2"} = SympyTools.test_mock_integrate("x", "x")
+      assert {:ok, "x**3/3"} = SympyTools.test_mock_integrate("x**2", "x")
+      assert {:ok, "Mock integral of unknown dx"} = SympyTools.test_mock_integrate("unknown", "x")
     end
 
     test "mock_expand handles known expansions" do
-      assert true # Placeholder
+      assert {:ok, "x**2 + 2*x + 1"} = SympyTools.test_mock_expand("(x + 1)**2")
+      assert {:ok, "x**2 + 2*x*y + y**2"} = SympyTools.test_mock_expand("(x + y)**2")
+      assert {:ok, "Mock expanded: unknown"} = SympyTools.test_mock_expand("unknown")
     end
 
     test "mock_factor handles known factorizations" do
-      assert true # Placeholder
+      assert {:ok, "(x - 1)*(x + 1)"} = SympyTools.test_mock_factor("x**2 - 1")
+      assert {:ok, "(x - 2)*(x + 2)"} = SympyTools.test_mock_factor("x**2 - 4")
+      assert {:ok, "Mock factored: unknown"} = SympyTools.test_mock_factor("unknown")
     end
 
     test "mock_evaluate handles known evaluations" do
-      assert true # Placeholder
+      assert {:ok, 6} = SympyTools.test_mock_evaluate("x + 1", %{"x" => 5})
+      assert {:ok, 6} = SympyTools.test_mock_evaluate("x * 2", %{"x" => 3})
+      assert {:ok, 42.0} = SympyTools.test_mock_evaluate("unknown", %{})
     end
   end
 
