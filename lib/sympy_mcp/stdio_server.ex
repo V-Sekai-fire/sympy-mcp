@@ -8,6 +8,7 @@ defmodule SympyMcp.StdioServer do
 
   require Logger
 
+  @spec child_spec(term()) :: Supervisor.child_spec()
   def child_spec(opts) do
     %{
       id: __MODULE__,
@@ -18,10 +19,12 @@ defmodule SympyMcp.StdioServer do
     }
   end
 
+  @spec start_link(term()) :: {:ok, pid()}
   def start_link(_opts) do
     {:ok, spawn_link(__MODULE__, :run, [])}
   end
 
+  @spec run() :: no_return()
   def run do
     Logger.info("MCP Stdio Server started, listening on stdin")
     read_messages()

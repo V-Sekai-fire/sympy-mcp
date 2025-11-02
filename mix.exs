@@ -30,7 +30,7 @@ defmodule SympyMcp.MixProject do
       {:ex_mcp, git: "https://github.com/azmaveth/ex_mcp.git"},
       {:jason, "~> 1.4"},
       {:pythonx, "~> 0.4.0", runtime: false},
-      {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
+      {:dialyxir, "~> 1.4.6", only: [:dev], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end

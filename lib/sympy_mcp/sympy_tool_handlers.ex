@@ -7,6 +7,7 @@ defmodule SympyMcp.SympyToolHandlers do
   Handles all SymPy symbolic mathematics tool implementations.
   """
 
+  @spec handle_solve(map(), map()) :: {:ok, map(), map()} | {:error, String.t(), map()}
   @doc """
   Handles sympy_solve tool call.
   Solves a symbolic equation for a variable.
@@ -24,6 +25,7 @@ defmodule SympyMcp.SympyToolHandlers do
     end
   end
 
+  @spec handle_simplify(map(), map()) :: {:ok, map(), map()} | {:error, String.t(), map()}
   @doc """
   Handles sympy_simplify tool call.
   Simplifies a symbolic expression.
@@ -41,6 +43,7 @@ defmodule SympyMcp.SympyToolHandlers do
     end
   end
 
+  @spec handle_differentiate(map(), map()) :: {:ok, map(), map()} | {:error, String.t(), map()}
   @doc """
   Handles sympy_differentiate tool call.
   Computes the derivative of an expression.
@@ -58,6 +61,7 @@ defmodule SympyMcp.SympyToolHandlers do
     end
   end
 
+  @spec handle_integrate(map(), map()) :: {:ok, map(), map()} | {:error, String.t(), map()}
   @doc """
   Handles sympy_integrate tool call.
   Computes the integral of an expression.
@@ -75,6 +79,7 @@ defmodule SympyMcp.SympyToolHandlers do
     end
   end
 
+  @spec handle_expand(map(), map()) :: {:ok, map(), map()} | {:error, String.t(), map()}
   @doc """
   Handles sympy_expand tool call.
   Expands a symbolic expression.
@@ -92,6 +97,7 @@ defmodule SympyMcp.SympyToolHandlers do
     end
   end
 
+  @spec handle_factor(map(), map()) :: {:ok, map(), map()} | {:error, String.t(), map()}
   @doc """
   Handles sympy_factor tool call.
   Factors a symbolic expression.
@@ -109,6 +115,7 @@ defmodule SympyMcp.SympyToolHandlers do
     end
   end
 
+  @spec handle_evaluate(map(), map()) :: {:ok, map(), map()} | {:error, String.t(), map()}
   @doc """
   Handles sympy_evaluate tool call.
   Evaluates a symbolic expression numerically.

@@ -62,6 +62,7 @@ defmodule SympyMcp.NativeService do
   end
 
   # GenServer callbacks for HTTP handler integration
+  @spec handle_call({:process_request, map()} | {:get_protocol_version}, GenServer.from(), map()) :: {:reply, {:ok, map()} | term(), map()}
   def handle_call({:process_request, request}, _from, state) do
     require Logger
     Logger.debug("Processing request: #{inspect(request)}")

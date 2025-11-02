@@ -7,6 +7,7 @@ defmodule SympyMcp.ToolHandlers do
   Routes tool calls to the appropriate SymPy tool handlers.
   """
 
+  @spec handle_tool_call(String.t(), map(), map()) :: {:ok, map(), map()} | {:error, String.t(), map()}
   # SymPy Tools - delegated to SympyToolHandlers
   def handle_tool_call("sympy_solve", args, state) do
     SympyMcp.SympyToolHandlers.handle_solve(args, state)
