@@ -1,4 +1,4 @@
-# MCP Aria SymPy
+# SymPy MCP
 
 An Elixir-based MCP (Model Context Protocol) server that provides symbolic mathematics capabilities using SymPy.
 
@@ -57,8 +57,7 @@ This project implements an MCP server that exposes SymPy's symbolic mathematics 
 The application runs as an MCP server that communicates via stdio:
 
 ```bash
-mix escript.build
-./mcp_aria_sympy
+mix mcp.server
 ```
 
 ### Available Tools
@@ -118,11 +117,11 @@ mix release
 
 The application consists of several key components:
 
-- `MCP.AriaSympy.Application`: Main application supervisor
-- `MCP.AriaSympy.NativeService`: MCP server implementation using ExMCP
-- `MCP.AriaSympy.StdioServer`: Stdio-based MCP transport
-- `MCP.AriaSympy.SympyTools`: Core SymPy functionality via Pythonx
-- `MCP.AriaSympy.ToolHandlers`: MCP tool request handlers
+- `SympyMcp.Application`: Main application supervisor
+- `SympyMcp.NativeService`: MCP server implementation using ExMCP
+- `SympyMcp.StdioServer`: Stdio-based MCP transport
+- `SympyMcp.SympyTools`: Core SymPy functionality via Pythonx
+- `SympyMcp.ToolHandlers`: MCP tool request handlers
 
 ## Dependencies
 

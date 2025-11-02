@@ -1,16 +1,16 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025-present K. S. Ernest (iFire) Lee
 
-defmodule MCP.AriaSympy.MixProject do
+defmodule SympyMcp.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :mcp_aria_sympy,
+      app: :sympy_mcp,
       version: "0.1.0",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
-      escript: [main_module: MCPAriaSympy.CLI],
+      escript: [main_module: SympyMcp.CLI],
       releases: releases(),
       deps: deps()
     ]
@@ -19,7 +19,7 @@ defmodule MCP.AriaSympy.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      mod: {MCP.AriaSympy.Application, []},
+      mod: {SympyMcp.Application, []},
       applications: [:logger, :ex_mcp, :pythonx]
     ]
   end
@@ -38,9 +38,9 @@ defmodule MCP.AriaSympy.MixProject do
   # Release configuration
   defp releases do
     [
-      mcp_aria_sympy: [
+      sympy_mcp: [
         include_executables_for: [:unix],
-        applications: [mcp_aria_sympy: :permanent]
+        applications: [sympy_mcp: :permanent]
       ]
     ]
   end

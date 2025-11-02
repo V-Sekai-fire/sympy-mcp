@@ -22,7 +22,7 @@ defmodule Mix.Tasks.Mcp.Server do
     Mix.Task.run("app.start")
 
     # Start the MCP application
-    Application.ensure_all_started(:mcp_aria_sympy)
+    Application.ensure_all_started(:sympy_mcp)
 
     # Keep the process running
     Process.sleep(:infinity)
