@@ -12,7 +12,10 @@ defmodule SympyMcp.MixProject do
       start_permanent: Mix.env() == :prod,
       escript: [main_module: SympyMcp.CLI],
       releases: releases(),
-      deps: deps()
+      deps: deps(),
+      dialyzer: [
+        ignore_warnings: ".dialyzer_ignore.exs"
+      ]
     ]
   end
 

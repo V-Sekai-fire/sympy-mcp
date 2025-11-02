@@ -1,9 +1,0 @@
-# Dialyzer ignore warnings file
-
-# Ignore Pythonx related warnings since it's a NIF
-:unknown_function
-lib/mcp_aria_sympy/sympy_tools.ex:*
-
-# Ignore Jason encoding warnings
-:unknown_type
-lib/mcp_aria_sympy/sympy_tool_handlers.ex:*

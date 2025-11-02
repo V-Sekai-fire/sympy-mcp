@@ -1,0 +1,8 @@
+# Suppress warnings from ex_mcp DSL generated code
+# These warnings are from unreachable pattern matches in generated handle_call clauses
+# that don't affect functionality but clutter the compilation output
+
+[
+  # Suppress pattern match warnings for the generated ex_mcp code
+  {SympyMcp.NativeService, :no_warn_pattern}
+]

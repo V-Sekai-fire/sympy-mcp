@@ -7,6 +7,9 @@ defmodule SympyMcp.NativeService do
   Provides symbolic mathematics tools via MCP protocol.
   """
 
+  # Suppress warnings from ex_mcp DSL generated code
+  @compile {:no_warn, :all}
+
   use ExMCP.Server,
     name: "SymPy MCP Server",
     version: "0.1.0"
