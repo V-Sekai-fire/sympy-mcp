@@ -1,16 +1,17 @@
 .git
 .gitignore
 .gitattributes
-bin/
-.scons_node_count
-.sconsign5.dblite
-__pycache__/
-*.pyc
+_build/
+deps/
+*.beam
 .vscode/
 .devcontainer/
-node_modules/
+__pycache__/
+*.pyc
 .env
 .DS_Store
 *.swp
 *.swo
 *~
+# Mix archives
+*.ez

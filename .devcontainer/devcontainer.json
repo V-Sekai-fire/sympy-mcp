@@ -1,28 +1,22 @@
 {
-  "name": "Godot BEAM Development",
+  "name": "SymPy MCP Development",
   "build": {
     "dockerfile": "Dockerfile",
     "context": ".."
   },
   "workspaceFolder": "/workspace",
-  "mounts": [
-    "source=${localEnv:HOME}/godot,target=/workspace,type=bind,consistency=cached"
-  ],
   "customizations": {
     "vscode": {
       "extensions": [
-        "ms-vscode.cpptools",
-        "ms-vscode.cmake-tools",
-        "llvm-vs-code-extensions.vscode-clangd",
-        "erlang.erlang-ls",
         "JakeBecker.elixir-ls",
+        "ms-vscode.vscode-json",
         "eamodio.gitlens",
         "saoudrizwan.claude-dev"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "elixirLS.fetchDeps": true,
         "editor.formatOnSave": true,
-        "C_Cpp.clangFormatStyle": "file"
+        "elixirLS.dialyzerEnabled": false
       }
     }
   },
@@ -32,6 +26,6 @@
   },
   "forwardPorts": [],
   "remoteEnv": {
-    "PATH": "/opt/elixir/bin/:/home/dev/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    "PATH": "/opt/elixir/bin:/home/dev/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
   }
 }
