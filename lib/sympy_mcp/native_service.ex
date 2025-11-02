@@ -3,136 +3,240 @@
 
 defmodule SympyMcp.NativeService do
   @moduledoc """
-  Native BEAM service for MCP.AriaSympy using ex_mcp library.
-  Main server module that coordinates tool handlers.
+  Native BEAM service for SymPy MCP using ex_mcp library.
+  Provides symbolic mathematics tools via MCP protocol.
   """
 
   use ExMCP.Server,
-    name: "Aria SymPy MCP Server",
+    name: "SymPy MCP Server",
     version: "0.1.0"
 
-  require SympyMcp.ToolDefinitions
-
-  alias SympyMcp.ToolHandlers
-
-  @type state() :: map()
-
-  # Import tool definitions
-  SympyMcp.ToolDefinitions.define_tools()
-
-  # Callbacks
-
-  @impl true
-  def init(_args) do
-    require Logger
-
-    Logger.info("Aria SymPy MCP Server initialized")
-
-    {:ok,
-     %{
-       prompt_uses: 0,
-       subscriptions: [],
-       created_resources: %{},
-       pending_requests: %{},
-       cancelled_requests: MapSet.new()
-     }}
-  end
-
-  @impl true
-  def handle_tool_call(tool_name, args, state) do
-    ToolHandlers.handle_tool_call(tool_name, args, state)
-  end
-
-  @impl true
-  def handle_initialize(params, state) do
-    client_version = Map.get(params, "protocolVersion", "2025-06-18")
-
-    result = %{
-      "protocolVersion" => client_version,
-      "serverInfo" => %{"name" => "Aria SymPy MCP Server", "version" => "0.1.0"},
-      "capabilities" => %{
-        "tools" => %{"listChanged" => true},
-        "resources" => %{"listChanged" => true, "subscribe" => true},
-        "prompts" => %{}
-      }
-    }
-
-    new_state = Map.put(state, :protocol_version, client_version)
-    {:ok, result, new_state}
-  end
-
-  # GenServer callbacks for HTTP handler integration
-  @spec handle_call({:process_request, map()} | {:get_protocol_version}, GenServer.from(), map()) ::
-          {:reply, {:ok, map()} | term(), map()}
-  def handle_call({:process_request, request}, _from, state) do
-    require Logger
-    Logger.debug("Processing request: #{inspect(request)}")
-
-    method = Map.get(request, "method")
-    params = Map.get(request, "params", %{})
-    id = Map.get(request, "id")
-
-    response = process_method(method, params, id, state)
-
-    case response do
-      {:ok, resp, new_state} -> {:reply, {:ok, resp}, new_state}
+  # Define SymPy tools using ex_mcp DSL
+  deftool "sympy_solve" do
+    meta do
+      name "Solve Equation"
+      description "Solves a symbolic equation for a variable using SymPy"
     end
-  end
 
-  def handle_call({:get_protocol_version}, _from, state) do
-    version = Map.get(state, :protocol_version, nil)
-    {:reply, version, state}
-  end
-
-  defp process_method("initialize", params, id, state) do
-    case handle_initialize(params, state) do
-      {:ok, result, new_state} ->
-        {:ok, %{"jsonrpc" => "2.0", "result" => result, "id" => id}, new_state}
-
-      other ->
-        {:ok,
-         %{
-           "jsonrpc" => "2.0",
-           "error" => %{"code" => -32_603, "message" => "Initialize failed: #{inspect(other)}"},
-           "id" => id
-         }, state}
-    end
-  end
-
-  defp process_method("tools/list", _params, id, state) do
-    tools_map = get_tools()
-
-    tools =
-      Enum.map(tools_map, fn {name, tool_def} ->
-        %{
-          "name" => name,
-          "description" => tool_def.description,
-          "inputSchema" => tool_def.input_schema
+    input_schema(%{
+      type: "object",
+      properties: %{
+        equation: %{
+          type: "string",
+          description: "String representation of the equation (e.g., 'x**2 - 1')"
+        },
+        variable: %{
+          type: "string",
+          description: "String representation of the variable to solve for (e.g., 'x')"
         }
-      end)
-
-    {:ok, %{"jsonrpc" => "2.0", "result" => %{"tools" => tools}, "id" => id}, state}
+      },
+      required: ["equation", "variable"]
+    })
   end
 
-  defp process_method("resources/list", _params, id, state) do
-    resources = []
-    {:ok, %{"jsonrpc" => "2.0", "result" => %{"resources" => resources}, "id" => id}, state}
+  deftool "sympy_simplify" do
+    meta do
+      name "Simplify Expression"
+      description "Simplifies a symbolic expression using SymPy"
+    end
+
+    input_schema(%{
+      type: "object",
+      properties: %{
+        expression: %{
+          type: "string",
+          description: "String representation of the expression"
+        }
+      },
+      required: ["expression"]
+    })
   end
 
-  defp process_method("tools/call", params, id, state) do
-    tool_name = Map.get(params, "name")
-    tool_args = Map.get(params, "arguments", %{})
+  deftool "sympy_differentiate" do
+    meta do
+      name "Differentiate Expression"
+      description "Computes the derivative of an expression using SymPy"
+    end
 
-    case handle_tool_call(tool_name, tool_args, state) do
-      {:ok, result, new_state} ->
-        {:ok, %{"jsonrpc" => "2.0", "result" => result, "id" => id}, new_state}
+    input_schema(%{
+      type: "object",
+      properties: %{
+        expression: %{
+          type: "string",
+          description: "String representation of the expression"
+        },
+        variable: %{
+          type: "string",
+          description: "String representation of the variable to differentiate with respect to"
+        }
+      },
+      required: ["expression", "variable"]
+    })
+  end
 
-      {:error, reason, new_state} ->
-        {:ok, %{"jsonrpc" => "2.0", "error" => %{"code" => -32_603, "message" => reason}, "id" => id}, new_state}
+  deftool "sympy_integrate" do
+    meta do
+      name "Integrate Expression"
+      description "Computes the integral of an expression using SymPy"
+    end
+
+    input_schema(%{
+      type: "object",
+      properties: %{
+        expression: %{
+          type: "string",
+          description: "String representation of the expression"
+        },
+        variable: %{
+          type: "string",
+          description: "String representation of the variable to integrate with respect to"
+        }
+      },
+      required: ["expression", "variable"]
+    })
+  end
+
+  deftool "sympy_expand" do
+    meta do
+      name "Expand Expression"
+      description "Expands a symbolic expression using SymPy"
+    end
+
+    input_schema(%{
+      type: "object",
+      properties: %{
+        expression: %{
+          type: "string",
+          description: "String representation of the expression"
+        }
+      },
+      required: ["expression"]
+    })
+  end
+
+  deftool "sympy_factor" do
+    meta do
+      name "Factor Expression"
+      description "Factors a symbolic expression using SymPy"
+    end
+
+    input_schema(%{
+      type: "object",
+      properties: %{
+        expression: %{
+          type: "string",
+          description: "String representation of the expression"
+        }
+      },
+      required: ["expression"]
+    })
+  end
+
+  deftool "sympy_evaluate" do
+    meta do
+      name "Evaluate Expression"
+      description "Evaluates a symbolic expression numerically using SymPy"
+    end
+
+    input_schema(%{
+      type: "object",
+      properties: %{
+        expression: %{
+          type: "string",
+          description: "String representation of the expression"
+        },
+        substitutions: %{
+          type: "object",
+          description: "Map of variable names to numeric values for substitution"
+        }
+      },
+      required: ["expression"]
+    })
+  end
+
+  # Tool call handlers
+  @impl true
+  def handle_tool_call("sympy_solve", %{"equation" => equation, "variable" => variable}, state) do
+    case SympyMcp.SympyTools.solve(equation, variable) do
+      {:ok, solutions} ->
+        {:ok, %{content: [text("Solutions: #{inspect(solutions)}")]}, state}
+
+      {:error, reason} ->
+        {:error, "Failed to solve equation: #{reason}", state}
     end
   end
 
-  defp process_method(_method, _params, id, state) do
-    {:ok, %{"jsonrpc" => "2.0", "error" => %{"code" => -32_601, "message" => "Method not found"}, "id" => id}, state}
+  @impl true
+  def handle_tool_call("sympy_simplify", %{"expression" => expression}, state) do
+    case SympyMcp.SympyTools.simplify(expression) do
+      {:ok, simplified} ->
+        {:ok, %{content: [text("Simplified: #{simplified}")]}, state}
+
+      {:error, reason} ->
+        {:error, "Failed to simplify expression: #{reason}", state}
+    end
+  end
+
+  @impl true
+  def handle_tool_call("sympy_differentiate", %{"expression" => expression, "variable" => variable}, state) do
+    case SympyMcp.SympyTools.differentiate(expression, variable) do
+      {:ok, derivative} ->
+        {:ok, %{content: [text("Derivative: #{derivative}")]}, state}
+
+      {:error, reason} ->
+        {:error, "Failed to differentiate expression: #{reason}", state}
+    end
+  end
+
+  @impl true
+  def handle_tool_call("sympy_integrate", %{"expression" => expression, "variable" => variable}, state) do
+    case SympyMcp.SympyTools.integrate(expression, variable) do
+      {:ok, integral} ->
+        {:ok, %{content: [text("Integral: #{integral}")]}, state}
+
+      {:error, reason} ->
+        {:error, "Failed to integrate expression: #{reason}", state}
+    end
+  end
+
+  @impl true
+  def handle_tool_call("sympy_expand", %{"expression" => expression}, state) do
+    case SympyMcp.SympyTools.expand(expression) do
+      {:ok, expanded} ->
+        {:ok, %{content: [text("Expanded: #{expanded}")]}, state}
+
+      {:error, reason} ->
+        {:error, "Failed to expand expression: #{reason}", state}
+    end
+  end
+
+  @impl true
+  def handle_tool_call("sympy_factor", %{"expression" => expression}, state) do
+    case SympyMcp.SympyTools.factor(expression) do
+      {:ok, factored} ->
+        {:ok, %{content: [text("Factored: #{factored}")]}, state}
+
+      {:error, reason} ->
+        {:error, "Failed to factor expression: #{reason}", state}
+    end
+  end
+
+  @impl true
+  def handle_tool_call("sympy_evaluate", %{"expression" => expression} = args, state) do
+    substitutions = Map.get(args, "substitutions", %{})
+
+    case SympyMcp.SympyTools.evaluate(expression, substitutions) do
+      {:ok, result} ->
+        {:ok, %{content: [text("Result: #{result}")]}, state}
+
+      {:error, reason} ->
+        {:error, "Failed to evaluate expression: #{reason}", state}
+    end
+  end
+
+  # Fallback for unknown tools
+  @impl true
+  def handle_tool_call(tool_name, _args, state) do
+    {:error, "Tool not found: #{tool_name}", state}
   end
 end
