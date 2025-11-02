@@ -8,7 +8,7 @@ defmodule SympyMcp.NativeService do
   """
 
   # Suppress warnings from ex_mcp DSL generated code
-  @compile {:no_warn, :all}
+  @compile {:no_warn_undefined, :no_warn_pattern}
 
   use ExMCP.Server,
     name: "SymPy MCP Server",
