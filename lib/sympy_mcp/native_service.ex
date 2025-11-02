@@ -70,56 +70,7 @@ defmodule SympyMcp.NativeService do
     params = Map.get(request, "params", %{})
     id = Map.get(request, "id")
 
-    response =
-      case method do
-        "initialize" ->
-          case handle_initialize(params, state) do
-            {:ok, result, new_state} ->
-              {:ok, %{"jsonrpc" => "2.0", "result" => result, "id" => id}, new_state}
-
-            other ->
-              {:ok,
-               %{
-                 "jsonrpc" => "2.0",
-                 "error" => %{"code" => -32_603, "message" => "Initialize failed: #{inspect(other)}"},
-                 "id" => id
-               }, state}
-          end
-
-        "tools/list" ->
-          tools_map = get_tools()
-
-          tools =
-            Enum.map(tools_map, fn {name, tool_def} ->
-              %{
-                "name" => name,
-                "description" => tool_def.description,
-                "inputSchema" => tool_def.input_schema
-              }
-            end)
-
-          {:ok, %{"jsonrpc" => "2.0", "result" => %{"tools" => tools}, "id" => id}, state}
-
-        "resources/list" ->
-          resources = []
-          {:ok, %{"jsonrpc" => "2.0", "result" => %{"resources" => resources}, "id" => id}, state}
-
-        "tools/call" ->
-          tool_name = Map.get(params, "name")
-          tool_args = Map.get(params, "arguments", %{})
-
-          case handle_tool_call(tool_name, tool_args, state) do
-            {:ok, result, new_state} ->
-              {:ok, %{"jsonrpc" => "2.0", "result" => result, "id" => id}, new_state}
-
-            {:error, reason, new_state} ->
-              {:ok, %{"jsonrpc" => "2.0", "error" => %{"code" => -32_603, "message" => reason}, "id" => id}, new_state}
-          end
-
-        _ ->
-          {:ok, %{"jsonrpc" => "2.0", "error" => %{"code" => -32_601, "message" => "Method not found"}, "id" => id},
-           state}
-      end
+    response = process_method(method, params, id, state)
 
     case response do
       {:ok, resp, new_state} -> {:reply, {:ok, resp}, new_state}
@@ -129,5 +80,57 @@ defmodule SympyMcp.NativeService do
   def handle_call({:get_protocol_version}, _from, state) do
     version = Map.get(state, :protocol_version, nil)
     {:reply, version, state}
+  end
+
+  defp process_method("initialize", params, id, state) do
+    case handle_initialize(params, state) do
+      {:ok, result, new_state} ->
+        {:ok, %{"jsonrpc" => "2.0", "result" => result, "id" => id}, new_state}
+
+      other ->
+        {:ok,
+         %{
+           "jsonrpc" => "2.0",
+           "error" => %{"code" => -32_603, "message" => "Initialize failed: #{inspect(other)}"},
+           "id" => id
+         }, state}
+    end
+  end
+
+  defp process_method("tools/list", _params, id, state) do
+    tools_map = get_tools()
+
+    tools =
+      Enum.map(tools_map, fn {name, tool_def} ->
+        %{
+          "name" => name,
+          "description" => tool_def.description,
+          "inputSchema" => tool_def.input_schema
+        }
+      end)
+
+    {:ok, %{"jsonrpc" => "2.0", "result" => %{"tools" => tools}, "id" => id}, state}
+  end
+
+  defp process_method("resources/list", _params, id, state) do
+    resources = []
+    {:ok, %{"jsonrpc" => "2.0", "result" => %{"resources" => resources}, "id" => id}, state}
+  end
+
+  defp process_method("tools/call", params, id, state) do
+    tool_name = Map.get(params, "name")
+    tool_args = Map.get(params, "arguments", %{})
+
+    case handle_tool_call(tool_name, tool_args, state) do
+      {:ok, result, new_state} ->
+        {:ok, %{"jsonrpc" => "2.0", "result" => result, "id" => id}, new_state}
+
+      {:error, reason, new_state} ->
+        {:ok, %{"jsonrpc" => "2.0", "error" => %{"code" => -32_603, "message" => reason}, "id" => id}, new_state}
+    end
+  end
+
+  defp process_method(_method, _params, id, state) do
+    {:ok, %{"jsonrpc" => "2.0", "error" => %{"code" => -32_601, "message" => "Method not found"}, "id" => id}, state}
   end
 end

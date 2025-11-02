@@ -53,29 +53,27 @@ defmodule SympyMcp.SympyTools do
 
   defp ensure_pythonx do
     case Application.ensure_all_started(:pythonx) do
-      {:ok, _} ->
-        # Check if we can actually execute Python code
-        case Pythonx.eval("1 + 1", %{}) do
-          {result, _globals} ->
-            case Pythonx.decode(result) do
-              # Pythonx is working
-              2 -> :ok
-              # Pythonx loaded but not working properly
-              _ -> :mock
-            end
-
-          # Pythonx eval failed
-          _ ->
-            :mock
-        end
-
       {:error, _reason} ->
-        # Pythonx not available, use mock responses
         :mock
+
+      {:ok, _} ->
+        check_pythonx_availability()
     end
   rescue
-    # Any error means use mock responses
     _ -> :mock
+  end
+
+  defp check_pythonx_availability do
+    case Pythonx.eval("1 + 1", %{}) do
+      {result, _globals} ->
+        case Pythonx.decode(result) do
+          2 -> :ok
+          _ -> :mock
+        end
+
+      _ ->
+        :mock
+    end
   end
 
   defp do_solve(equation, variable) do
@@ -405,9 +403,7 @@ defmodule SympyMcp.SympyTools do
 
   defp do_evaluate(expression, substitutions) do
     subs_code =
-      substitutions
-      |> Enum.map(fn {var, val} -> "'#{var}': #{val}" end)
-      |> Enum.join(", ")
+      Enum.map_join(substitutions, ", ", fn {var, val} -> "'#{var}': #{val}" end)
 
     code = """
     from sympy import parse_expr

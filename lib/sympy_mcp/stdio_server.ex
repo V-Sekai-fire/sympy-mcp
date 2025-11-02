@@ -38,16 +38,15 @@ defmodule SympyMcp.StdioServer do
         :error
 
       line ->
-        case String.trim(line) do
-          "" ->
-            # Empty line, continue
-            read_messages()
+        process_line(String.trim(line))
+    end
+  end
 
-          message ->
-            case process_message(message) do
-              :ok -> read_messages()
-            end
-        end
+  defp process_line(""), do: read_messages()
+
+  defp process_line(message) do
+    case process_message(message) do
+      :ok -> read_messages()
     end
   end
 
