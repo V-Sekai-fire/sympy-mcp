@@ -11,4 +11,3 @@ if System.get_env("MCP_STDIO_MODE") == "true" do
     metadata: [:request_id],
     device: :standard_error
 end
-

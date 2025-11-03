@@ -66,6 +66,7 @@ defmodule SympyMcp.SympyTools do
   defp check_pythonx_availability do
     # Use /dev/null to suppress Python's output from corrupting stdio
     null_device = File.open!("/dev/null", [:write])
+
     case Pythonx.eval("1 + 1", %{}, stdout_device: null_device, stderr_device: null_device) do
       {result, _globals} ->
         case Pythonx.decode(result) do
