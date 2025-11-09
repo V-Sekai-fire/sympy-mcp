@@ -19,6 +19,7 @@ defmodule SympyMcp.Application do
       case transport do
         :http ->
           port = get_port()
+          host = get_host()
           
           # Start NativeService directly with HTTP transport and SSE enabled
           # This matches the pattern from deps/ex_mcp/examples/getting_started/03_http_sse_server.exs
@@ -28,6 +29,7 @@ defmodule SympyMcp.Application do
               [
                 transport: :http,
                 port: port,
+                host: host,
                 use_sse: true,
                 name: SympyMcp.NativeService
               ]
@@ -49,6 +51,17 @@ defmodule SympyMcp.Application do
     case System.get_env("PORT") do
       nil -> 8081
       port_str -> String.to_integer(port_str)
+    end
+  end
+
+  defp get_host do
+    # Use 0.0.0.0 for Docker/container deployments to accept external connections
+    # Use localhost for local development
+    case System.get_env("HOST") do
+      nil -> 
+        # Default to 0.0.0.0 if PORT is set (container deployment), otherwise localhost
+        if System.get_env("PORT"), do: "0.0.0.0", else: "localhost"
+      host -> host
     end
   end
 
