@@ -35,6 +35,12 @@ defmodule SympyMcp.NativeService do
       },
       required: ["equation", "variable"]
     })
+
+    tool_annotations(%{
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true
+    })
   end
 
   deftool "sympy_simplify" do
@@ -52,6 +58,12 @@ defmodule SympyMcp.NativeService do
         }
       },
       required: ["expression"]
+    })
+
+    tool_annotations(%{
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true
     })
   end
 
@@ -75,6 +87,12 @@ defmodule SympyMcp.NativeService do
       },
       required: ["expression", "variable"]
     })
+
+    tool_annotations(%{
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true
+    })
   end
 
   deftool "sympy_integrate" do
@@ -97,6 +115,12 @@ defmodule SympyMcp.NativeService do
       },
       required: ["expression", "variable"]
     })
+
+    tool_annotations(%{
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true
+    })
   end
 
   deftool "sympy_expand" do
@@ -115,6 +139,12 @@ defmodule SympyMcp.NativeService do
       },
       required: ["expression"]
     })
+
+    tool_annotations(%{
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true
+    })
   end
 
   deftool "sympy_factor" do
@@ -132,6 +162,12 @@ defmodule SympyMcp.NativeService do
         }
       },
       required: ["expression"]
+    })
+
+    tool_annotations(%{
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true
     })
   end
 
@@ -155,6 +191,37 @@ defmodule SympyMcp.NativeService do
       },
       required: ["expression"]
     })
+
+    tool_annotations(%{
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true
+    })
+  end
+
+  # Define prompts
+  defprompt "symbolic_math_helper" do
+    meta do
+      name("Symbolic Math Helper")
+      description("Helps users perform symbolic mathematics operations with SymPy")
+    end
+
+    arguments do
+      arg :operation, required: true, description: "The mathematical operation to perform (solve, simplify, differentiate, integrate, expand, factor, or evaluate)"
+      arg :expression, required: true, description: "The mathematical expression to work with"
+      arg :variable, description: "The variable to use (required for solve, differentiate, and integrate operations)"
+      arg :substitutions, description: "Variable substitutions for evaluation (JSON object)"
+    end
+  end
+
+  # Define resources
+  defresource "sympy://examples" do
+    meta do
+      name("SymPy Example Expressions")
+      description("Common example expressions for testing SymPy operations")
+    end
+
+    mime_type "application/json"
   end
 
   # Tool call handlers
@@ -241,5 +308,94 @@ defmodule SympyMcp.NativeService do
   @impl true
   def handle_tool_call(tool_name, _args, state) do
     {:error, "Tool not found: #{tool_name}", state}
+  end
+
+  # Prompt handler
+  @impl true
+  def handle_prompt_get("symbolic_math_helper", args, state) do
+    operation = Map.get(args, "operation", "simplify")
+    expression = Map.get(args, "expression", "")
+    variable = Map.get(args, "variable")
+    substitutions = Map.get(args, "substitutions")
+
+    # Build guidance based on operation
+    guidance = case operation do
+      "solve" ->
+        "To solve the equation #{expression} for #{variable || "a variable"}, use the sympy_solve tool with the equation and variable parameters."
+      "simplify" ->
+        "To simplify the expression #{expression}, use the sympy_simplify tool with the expression parameter."
+      "differentiate" ->
+        "To differentiate #{expression} with respect to #{variable || "a variable"}, use the sympy_differentiate tool with the expression and variable parameters."
+      "integrate" ->
+        "To integrate #{expression} with respect to #{variable || "a variable"}, use the sympy_integrate tool with the expression and variable parameters."
+      "expand" ->
+        "To expand the expression #{expression}, use the sympy_expand tool with the expression parameter."
+      "factor" ->
+        "To factor the expression #{expression}, use the sympy_factor tool with the expression parameter."
+      "evaluate" ->
+        subs_text = if substitutions, do: " with substitutions #{substitutions}", else: ""
+        "To evaluate #{expression}#{subs_text}, use the sympy_evaluate tool with the expression#{if substitutions, do: " and substitutions", else: ""} parameters."
+      _ ->
+        "Available operations: solve, simplify, differentiate, integrate, expand, factor, and evaluate. Use the appropriate tool for your operation."
+    end
+
+    messages = [
+      system("You are a helpful assistant for symbolic mathematics using SymPy. Guide users on how to use the available tools."),
+      user("I want to #{operation} the expression: #{expression}#{if variable, do: " with variable #{variable}", else: ""}"),
+      assistant("#{guidance}\n\nAll SymPy tools are read-only, non-destructive, and idempotent - you can safely call them multiple times with the same inputs.")
+    ]
+
+    {:ok, %{messages: messages}, state}
+  end
+
+  # Resource handler
+  @impl true
+  def handle_resource_read("sympy://examples", _uri, state) do
+    examples = %{
+      "basic_expressions" => [
+        "x**2 + 2*x + 1",
+        "sin(x) + cos(x)",
+        "exp(x) * log(x)"
+      ],
+      "equations" => [
+        "x**2 - 4 = 0",
+        "x**2 + y**2 = 1",
+        "x**3 - 1 = 0"
+      ],
+      "derivatives" => [
+        "x**2",
+        "sin(x)",
+        "exp(x) * log(x)"
+      ],
+      "integrals" => [
+        "x**2",
+        "1/x",
+        "exp(-x**2)"
+      ]
+    }
+
+    content = [
+      text("""
+      SymPy Example Expressions
+
+      These are common expressions you can use to test SymPy operations:
+
+      Basic Expressions:
+      #{Enum.join(examples["basic_expressions"], "\n      ")}
+
+      Equations (for solving):
+      #{Enum.join(examples["equations"], "\n      ")}
+
+      Expressions for Differentiation:
+      #{Enum.join(examples["derivatives"], "\n      ")}
+
+      Expressions for Integration:
+      #{Enum.join(examples["integrals"], "\n      ")}
+
+      Use these examples with the appropriate SymPy tools to perform symbolic mathematics operations.
+      """)
+    ]
+
+    {:ok, content, state}
   end
 end
