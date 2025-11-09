@@ -53,14 +53,17 @@ defmodule SympyMcp.SympyTools do
 
   defp ensure_pythonx do
     case Application.ensure_all_started(:pythonx) do
-      {:error, _reason} ->
+      {:error, reason} ->
+        Logger.warning("Failed to start Pythonx application: #{inspect(reason)}")
         :mock
 
       {:ok, _} ->
         check_pythonx_availability()
     end
   rescue
-    _ -> :mock
+    exception ->
+      Logger.error("Exception starting Pythonx: #{Exception.message(exception)}")
+      :mock
   end
 
   defp check_pythonx_availability do

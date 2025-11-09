@@ -16,7 +16,16 @@ defmodule SympyMcp.MixProject do
       dialyzer: [
         ignore_warnings: ".dialyzer_ignore.exs"
       ],
-      test_coverage: [summary: [threshold: 70], ignore_modules: [SympyMcp.NativeService, Mix.Tasks.Mcp.Server, SympyMcp.HttpPlugWrapper, SympyMcp.HttpServer, SympyMcp.Router]]
+      test_coverage: [
+        summary: [threshold: 70],
+        ignore_modules: [
+          SympyMcp.NativeService,
+          Mix.Tasks.Mcp.Server,
+          SympyMcp.HttpPlugWrapper,
+          SympyMcp.HttpServer,
+          SympyMcp.Router
+        ]
+      ]
     ]
   end
 

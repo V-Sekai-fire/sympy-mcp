@@ -231,88 +231,65 @@ defmodule SympyMcp.NativeService do
 
   # Tool call handlers
   @impl true
-  def handle_tool_call("sympy_solve", %{"equation" => equation, "variable" => variable}, state) do
-    case SympyMcp.SympyTools.solve(equation, variable) do
-      {:ok, solutions} ->
-        {:ok, %{content: [text("Solutions: #{inspect(solutions)}")]}, state}
+  def handle_tool_call(tool_name, args, state) do
+    case tool_name do
+      "sympy_solve" ->
+        handle_sympy_operation(
+          &SympyMcp.SympyTools.solve/2,
+          [args["equation"], args["variable"]],
+          "solve equation",
+          state
+        )
 
-      {:error, reason} ->
-        {:error, "Failed to solve equation: #{reason}", state}
+      "sympy_simplify" ->
+        handle_sympy_operation(&SympyMcp.SympyTools.simplify/1, [args["expression"]], "simplify expression", state)
+
+      "sympy_differentiate" ->
+        handle_sympy_operation(
+          &SympyMcp.SympyTools.differentiate/2,
+          [args["expression"], args["variable"]],
+          "differentiate expression",
+          state
+        )
+
+      "sympy_integrate" ->
+        handle_sympy_operation(
+          &SympyMcp.SympyTools.integrate/2,
+          [args["expression"], args["variable"]],
+          "integrate expression",
+          state
+        )
+
+      "sympy_expand" ->
+        handle_sympy_operation(&SympyMcp.SympyTools.expand/1, [args["expression"]], "expand expression", state)
+
+      "sympy_factor" ->
+        handle_sympy_operation(&SympyMcp.SympyTools.factor/1, [args["expression"]], "factor expression", state)
+
+      "sympy_evaluate" ->
+        substitutions = Map.get(args, "substitutions", %{})
+
+        handle_sympy_operation(
+          &SympyMcp.SympyTools.evaluate/2,
+          [args["expression"], substitutions],
+          "evaluate expression",
+          state
+        )
+
+      _ ->
+        {:error, "Tool not found: #{tool_name}", state}
     end
   end
 
-  @impl true
-  def handle_tool_call("sympy_simplify", %{"expression" => expression}, state) do
-    case SympyMcp.SympyTools.simplify(expression) do
-      {:ok, simplified} ->
-        {:ok, %{content: [text("Simplified: #{simplified}")]}, state}
-
-      {:error, reason} ->
-        {:error, "Failed to simplify expression: #{reason}", state}
-    end
-  end
-
-  @impl true
-  def handle_tool_call("sympy_differentiate", %{"expression" => expression, "variable" => variable}, state) do
-    case SympyMcp.SympyTools.differentiate(expression, variable) do
-      {:ok, derivative} ->
-        {:ok, %{content: [text("Derivative: #{derivative}")]}, state}
-
-      {:error, reason} ->
-        {:error, "Failed to differentiate expression: #{reason}", state}
-    end
-  end
-
-  @impl true
-  def handle_tool_call("sympy_integrate", %{"expression" => expression, "variable" => variable}, state) do
-    case SympyMcp.SympyTools.integrate(expression, variable) do
-      {:ok, integral} ->
-        {:ok, %{content: [text("Integral: #{integral}")]}, state}
-
-      {:error, reason} ->
-        {:error, "Failed to integrate expression: #{reason}", state}
-    end
-  end
-
-  @impl true
-  def handle_tool_call("sympy_expand", %{"expression" => expression}, state) do
-    case SympyMcp.SympyTools.expand(expression) do
-      {:ok, expanded} ->
-        {:ok, %{content: [text("Expanded: #{expanded}")]}, state}
-
-      {:error, reason} ->
-        {:error, "Failed to expand expression: #{reason}", state}
-    end
-  end
-
-  @impl true
-  def handle_tool_call("sympy_factor", %{"expression" => expression}, state) do
-    case SympyMcp.SympyTools.factor(expression) do
-      {:ok, factored} ->
-        {:ok, %{content: [text("Factored: #{factored}")]}, state}
-
-      {:error, reason} ->
-        {:error, "Failed to factor expression: #{reason}", state}
-    end
-  end
-
-  @impl true
-  def handle_tool_call("sympy_evaluate", %{"expression" => expression} = args, state) do
-    substitutions = Map.get(args, "substitutions", %{})
-
-    case SympyMcp.SympyTools.evaluate(expression, substitutions) do
+  # Helper function to reduce code duplication in tool handlers
+  defp handle_sympy_operation(function, args, operation_description, state) do
+    case apply(function, args) do
       {:ok, result} ->
-        {:ok, %{content: [text("Result: #{result}")]}, state}
+        {:ok, %{content: [text("#{String.capitalize(operation_description)} result: #{result}")]}, state}
 
       {:error, reason} ->
-        {:error, "Failed to evaluate expression: #{reason}", state}
+        {:error, "Failed to #{operation_description}: #{reason}", state}
     end
-  end
-
-  # Fallback for unknown tools
-  @impl true
-  def handle_tool_call(tool_name, _args, state) do
-    {:error, "Tool not found: #{tool_name}", state}
   end
 
   # Prompt handler
@@ -391,7 +368,9 @@ defmodule SympyMcp.NativeService do
     {:ok, content, state}
   end
 
+  # Prompt handler
   defp build_operation_guidance(operation, expression, variable, substitutions) do
+    # Build a map of operation guidance functions for better performance and maintainability
     guidance_map = %{
       "solve" => fn ->
         "To solve the equation #{expression} for #{variable || "a variable"}, use the sympy_solve tool with the equation and variable parameters."
@@ -418,6 +397,7 @@ defmodule SympyMcp.NativeService do
       end
     }
 
+    # Use Map.get with a default fallback for unknown operations
     case Map.get(guidance_map, operation) do
       nil ->
         "Available operations: solve, simplify, differentiate, integrate, expand, factor, and evaluate. Use the appropriate tool for your operation."
