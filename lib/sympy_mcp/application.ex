@@ -18,16 +18,20 @@ defmodule SympyMcp.Application do
     children =
       case transport do
         :http ->
+          port = get_port()
+          
+          # Start NativeService directly with HTTP transport and SSE enabled
+          # This matches the pattern from deps/ex_mcp/examples/getting_started/03_http_sse_server.exs
           [
-            # Initialize HttpPlug ETS table for SSE
-            # Note: NativeService is started by HttpPlug via the handler option in Router
-            %{
-              id: ExMCP.HttpPlug,
-              start: {ExMCP.HttpPlug, :start_link, [[]]},
-              type: :worker,
-              restart: :permanent
-            },
-            {SympyMcp.HttpServer, []}
+            {
+              SympyMcp.NativeService,
+              [
+                transport: :http,
+                port: port,
+                use_sse: true,
+                name: SympyMcp.NativeService
+              ]
+            }
           ]
 
         :stdio ->
@@ -39,6 +43,13 @@ defmodule SympyMcp.Application do
 
     opts = [strategy: :one_for_one, name: SympyMcp.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp get_port do
+    case System.get_env("PORT") do
+      nil -> 8081
+      port_str -> String.to_integer(port_str)
+    end
   end
 
   defp get_transport do
