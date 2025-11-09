@@ -229,6 +229,70 @@ defmodule SympyMcp.NativeService do
     mime_type("application/json")
   end
 
+  # Initialize handler with required configuration schema
+  @impl true
+  def handle_initialize(params, state) do
+    # Validate required configuration
+    config = Map.get(params, "config", %{})
+
+    case validate_config(config) do
+      {:ok, validated_config} ->
+        # Store config in state for use in tool handlers
+        new_state = Map.put(state, :config, validated_config)
+
+        # Define required configuration schema
+        config_schema = %{
+          type: "object",
+          properties: %{
+            timeout_ms: %{
+              type: "integer",
+              description:
+                "Maximum time in milliseconds allowed for SymPy operations. Prevents resource exhaustion and DoS attacks.",
+              minimum: 100,
+              maximum: 300_000,
+              examples: [5000, 10000, 30000]
+            }
+          },
+          required: ["timeout_ms"],
+          additionalProperties: false
+        }
+
+        {:ok,
+         %{
+           protocolVersion: Map.get(params, "protocolVersion", "2025-06-18"),
+           serverInfo: %{
+             name: "SymPy MCP Server",
+             version: "1.0.0-dev1"
+           },
+           capabilities: %{
+             tools: %{},
+             resources: %{},
+             prompts: %{}
+           },
+           configSchema: config_schema
+         }, new_state}
+
+      {:error, reason} ->
+        {:error, "Invalid configuration: #{reason}", state}
+    end
+  end
+
+  defp validate_config(config) do
+    case Map.get(config, "timeout_ms") do
+      nil ->
+        {:error, "timeout_ms is required"}
+
+      timeout when is_integer(timeout) and timeout >= 100 and timeout <= 300_000 ->
+        {:ok, %{timeout_ms: timeout}}
+
+      timeout when is_integer(timeout) ->
+        {:error, "timeout_ms must be between 100 and 300000 milliseconds"}
+
+      _ ->
+        {:error, "timeout_ms must be an integer"}
+    end
+  end
+
   # Tool call handlers
   @impl true
   def handle_tool_call(tool_name, args, state) do

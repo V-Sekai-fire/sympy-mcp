@@ -107,6 +107,13 @@ curl -X POST http://localhost:8081/ \
 
 ## Configuration
 
+**Required MCP Configuration:**
+
+The server requires configuration during initialization:
+
+- `timeout_ms` (integer, required): Maximum time in milliseconds allowed for SymPy operations. Must be between 100 and 300000. Prevents resource exhaustion and DoS attacks.
+  - Example values: `5000`, `10000`, `30000`
+
 **Environment Variables:**
 
 - `MCP_TRANSPORT` - Transport type (`"http"` or `"stdio"`)
