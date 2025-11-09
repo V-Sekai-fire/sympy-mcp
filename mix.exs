@@ -10,7 +10,6 @@ defmodule SympyMcp.MixProject do
       version: "1.0.0-dev1",
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
-      escript: [main_module: SympyMcp.CLI],
       releases: releases(),
       deps: deps(),
       dialyzer: [
