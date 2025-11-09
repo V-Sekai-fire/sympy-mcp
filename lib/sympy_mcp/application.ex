@@ -19,7 +19,14 @@ defmodule SympyMcp.Application do
       case transport do
         :http ->
           [
-            {SympyMcp.NativeService, [name: SympyMcp.NativeService]},
+            # Initialize HttpPlug ETS table for SSE
+            # Note: NativeService is started by HttpPlug via the handler option in Router
+            %{
+              id: ExMCP.HttpPlug,
+              start: {ExMCP.HttpPlug, :start_link, [[]]},
+              type: :worker,
+              restart: :permanent
+            },
             {SympyMcp.HttpServer, []}
           ]
 

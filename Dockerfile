@@ -81,6 +81,7 @@ RUN dnf update -y && \
     python3-pip \
     ca-certificates \
     glibc-langpack-en && \
+    localedef -c -i en_US -f UTF-8 en_US.UTF-8 || true && \
     dnf clean all
 
 # Copy Elixir installation from builder
@@ -99,8 +100,8 @@ ENV MIX_ENV=prod
 ENV MCP_TRANSPORT=http
 ENV PORT=8081
 ENV ELIXIR_ERL_OPTIONS="+fnu"
-ENV LANG=en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 # Expose the port
 EXPOSE 8081

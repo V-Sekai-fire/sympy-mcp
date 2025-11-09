@@ -17,29 +17,17 @@ defmodule SympyMcp.Router do
     send_resp(conn, 200, Jason.encode!(%{status: "ok"}))
   end
 
-  # Forward all other requests to ExMCP.HttpPlug
-  forward "/", to: ExMCP.HttpPlug, init_opts: [
+  # Forward all other requests to HttpPlugWrapper (which fixes SSE fallback)
+  forward "/", to: SympyMcp.HttpPlugWrapper, init_opts: [
     handler: SympyMcp.NativeService,
     server_info: %{
       name: "SymPy MCP Server",
       version: "0.1.0"
     },
-    sse_enabled: true,
+    # Always enable SSE (never disable), but HttpPlugWrapper will fallback to HTTP if no SSE connection
+    # Set MCP_SSE_ENABLED=false to disable SSE entirely (not recommended)
+    sse_enabled: System.get_env("MCP_SSE_ENABLED") != "false",
     cors_enabled: true
   ]
-
-  defp get_plug_opts do
-    server_info = %{
-      name: "SymPy MCP Server",
-      version: "0.1.0"
-    }
-
-    [
-      handler: SympyMcp.NativeService,
-      server_info: server_info,
-      sse_enabled: true,
-      cors_enabled: true
-    ]
-  end
 end
 
