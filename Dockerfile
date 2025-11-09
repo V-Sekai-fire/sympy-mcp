@@ -7,7 +7,8 @@ FROM almalinux:9 AS builder
 WORKDIR /app
 
 # Install build dependencies
-RUN dnf update -y && dnf install -y \
+# Use --allowerasing to replace curl-minimal with curl if needed
+RUN dnf update -y && dnf install -y --allowerasing \
     gcc g++ make git \
     python3 python3-devel python3-pip \
     openssl-devel \
