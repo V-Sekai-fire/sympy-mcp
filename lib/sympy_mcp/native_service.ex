@@ -250,7 +250,7 @@ defmodule SympyMcp.NativeService do
                 "Maximum time in milliseconds allowed for SymPy operations. Prevents resource exhaustion and DoS attacks.",
               minimum: 100,
               maximum: 300_000,
-              examples: [5000, 10000, 30000]
+              examples: [5_000, 10_000, 30_000]
             }
           },
           required: ["timeout_ms"],
