@@ -1,5 +1,7 @@
 # SymPy MCP
 
+[![smithery badge](https://smithery.ai/badge/@V-Sekai-fire/sympy-mcp)](https://smithery.ai/server/@V-Sekai-fire/sympy-mcp)
+
 An Elixir-based MCP (Model Context Protocol) server that provides symbolic mathematics capabilities using SymPy.
 
 ## Overview
