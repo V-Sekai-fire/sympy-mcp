@@ -12,12 +12,35 @@ defmodule SympyMcp.Application do
     # Ensure Pythonx is started for SymPy support
     Application.ensure_all_started(:pythonx)
 
-    children = [
-      {SympyMcp.NativeService, [name: SympyMcp.NativeService]},
-      {SympyMcp.StdioServer, []}
-    ]
+    # Determine transport based on environment
+    transport = get_transport()
+
+    children =
+      case transport do
+        :http ->
+          [
+            {SympyMcp.NativeService, [name: SympyMcp.NativeService]},
+            {SympyMcp.HttpServer, []}
+          ]
+
+        :stdio ->
+          [
+            {SympyMcp.NativeService, [name: SympyMcp.NativeService]},
+            {SympyMcp.StdioServer, []}
+          ]
+      end
 
     opts = [strategy: :one_for_one, name: SympyMcp.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp get_transport do
+    case System.get_env("MCP_TRANSPORT") do
+      "http" -> :http
+      "stdio" -> :stdio
+      _ ->
+        # Default to http if PORT is set (Smithery deployment), otherwise stdio
+        if System.get_env("PORT"), do: :http, else: :stdio
+    end
   end
 end

@@ -24,7 +24,7 @@ defmodule SympyMcp.MixProject do
   def application do
     [
       mod: {SympyMcp.Application, []},
-      applications: [:logger, :ex_mcp, :pythonx]
+      applications: [:logger, :ex_mcp, :pythonx, :plug_cowboy]
     ]
   end
 
