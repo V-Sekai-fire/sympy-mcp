@@ -23,29 +23,32 @@ defmodule SympyMcp.HttpPlugWrapper do
     # try to find an active SSE connection and use its session ID
     # opts is a map (from HttpPlug.init), not a keyword list
     sse_enabled = Map.get(opts, :sse_enabled, true)
-    modified_conn = if conn.method == "POST" && sse_enabled do
+    
+    if conn.method == "POST" && sse_enabled do
       case Plug.Conn.get_req_header(conn, "mcp-session-id") do
         [] ->
           # No session ID provided, try to find an active SSE connection
           case find_any_active_sse_session() do
             {:ok, session_id} ->
               # Use the active SSE session ID
-              Plug.Conn.put_req_header(conn, "mcp-session-id", session_id)
+              modified_conn = Plug.Conn.put_req_header(conn, "mcp-session-id", session_id)
+              HttpPlug.call(modified_conn, opts)
 
             {:error, _} ->
-              # No active SSE connection, let it fail (as requested: crash on bugs)
-              conn
+              # No active SSE connection - disable SSE for this request to allow HTTP response
+              # This prevents timeouts when clients don't use SSE (e.g., Smithery scanner)
+              modified_opts = Map.put(opts, :sse_enabled, false)
+              HttpPlug.call(conn, modified_opts)
           end
 
         [_session_id] ->
           # Session ID provided, use as-is
-          conn
+          HttpPlug.call(conn, opts)
       end
     else
-      conn
+      # Not a POST request or SSE disabled, pass through
+      HttpPlug.call(conn, opts)
     end
-
-    HttpPlug.call(modified_conn, opts)
   end
 
   # Find any active SSE session from the ETS table
