@@ -240,21 +240,23 @@ defmodule SympyMcp.NativeService do
         # Store config in state for use in tool handlers
         new_state = Map.put(state, :config, validated_config)
 
-        # Define required configuration schema
+        # Define required configuration schema (JSON Schema format)
         config_schema = %{
-          type: "object",
-          properties: %{
-            timeout_ms: %{
-              type: "integer",
-              description:
+          "$schema" => "http://json-schema.org/draft-07/schema#",
+          "title" => "SymPy MCP Server Configuration",
+          "type" => "object",
+          "properties" => %{
+            "timeout_ms" => %{
+              "type" => "integer",
+              "description" =>
                 "Maximum time in milliseconds allowed for SymPy operations. Prevents resource exhaustion and DoS attacks.",
-              minimum: 100,
-              maximum: 300_000,
-              examples: [5_000, 10_000, 30_000]
+              "minimum" => 100,
+              "maximum" => 300_000,
+              "examples" => [5_000, 10_000, 30_000]
             }
           },
-          required: ["timeout_ms"],
-          additionalProperties: false
+          "required" => ["timeout_ms"],
+          "additionalProperties" => false
         }
 
         {:ok,
