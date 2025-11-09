@@ -106,10 +106,6 @@ ENV LC_ALL=C.UTF-8
 # Expose the port
 EXPOSE 8081
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
-
 # Start the server
 CMD ["./sympy_mcp/bin/sympy_mcp", "start"]
 
