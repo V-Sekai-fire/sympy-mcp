@@ -12,7 +12,7 @@ defmodule SympyMcp.NativeService do
 
   use ExMCP.Server,
     name: "SymPy MCP Server",
-    version: "0.1.0"
+    version: "1.0.0-dev1"
 
   # Define SymPy tools using ex_mcp DSL
   deftool "sympy_solve" do
@@ -207,10 +207,15 @@ defmodule SympyMcp.NativeService do
     end
 
     arguments do
-      arg :operation, required: true, description: "The mathematical operation to perform (solve, simplify, differentiate, integrate, expand, factor, or evaluate)"
-      arg :expression, required: true, description: "The mathematical expression to work with"
-      arg :variable, description: "The variable to use (required for solve, differentiate, and integrate operations)"
-      arg :substitutions, description: "Variable substitutions for evaluation (JSON object)"
+      arg(:operation,
+        required: true,
+        description:
+          "The mathematical operation to perform (solve, simplify, differentiate, integrate, expand, factor, or evaluate)"
+      )
+
+      arg(:expression, required: true, description: "The mathematical expression to work with")
+      arg(:variable, description: "The variable to use (required for solve, differentiate, and integrate operations)")
+      arg(:substitutions, description: "Variable substitutions for evaluation (JSON object)")
     end
   end
 
@@ -221,7 +226,7 @@ defmodule SympyMcp.NativeService do
       description("Common example expressions for testing SymPy operations")
     end
 
-    mime_type "application/json"
+    mime_type("application/json")
   end
 
   # Tool call handlers
@@ -318,31 +323,18 @@ defmodule SympyMcp.NativeService do
     variable = Map.get(args, "variable")
     substitutions = Map.get(args, "substitutions")
 
-    # Build guidance based on operation
-    guidance = case operation do
-      "solve" ->
-        "To solve the equation #{expression} for #{variable || "a variable"}, use the sympy_solve tool with the equation and variable parameters."
-      "simplify" ->
-        "To simplify the expression #{expression}, use the sympy_simplify tool with the expression parameter."
-      "differentiate" ->
-        "To differentiate #{expression} with respect to #{variable || "a variable"}, use the sympy_differentiate tool with the expression and variable parameters."
-      "integrate" ->
-        "To integrate #{expression} with respect to #{variable || "a variable"}, use the sympy_integrate tool with the expression and variable parameters."
-      "expand" ->
-        "To expand the expression #{expression}, use the sympy_expand tool with the expression parameter."
-      "factor" ->
-        "To factor the expression #{expression}, use the sympy_factor tool with the expression parameter."
-      "evaluate" ->
-        subs_text = if substitutions, do: " with substitutions #{substitutions}", else: ""
-        "To evaluate #{expression}#{subs_text}, use the sympy_evaluate tool with the expression#{if substitutions, do: " and substitutions", else: ""} parameters."
-      _ ->
-        "Available operations: solve, simplify, differentiate, integrate, expand, factor, and evaluate. Use the appropriate tool for your operation."
-    end
+    guidance = build_operation_guidance(operation, expression, variable, substitutions)
 
     messages = [
-      system("You are a helpful assistant for symbolic mathematics using SymPy. Guide users on how to use the available tools."),
-      user("I want to #{operation} the expression: #{expression}#{if variable, do: " with variable #{variable}", else: ""}"),
-      assistant("#{guidance}\n\nAll SymPy tools are read-only, non-destructive, and idempotent - you can safely call them multiple times with the same inputs.")
+      system(
+        "You are a helpful assistant for symbolic mathematics using SymPy. Guide users on how to use the available tools."
+      ),
+      user(
+        "I want to #{operation} the expression: #{expression}#{if variable, do: " with variable #{variable}", else: ""}"
+      ),
+      assistant(
+        "#{guidance}\n\nAll SymPy tools are read-only, non-destructive, and idempotent - you can safely call them multiple times with the same inputs."
+      )
     ]
 
     {:ok, %{messages: messages}, state}
@@ -397,5 +389,41 @@ defmodule SympyMcp.NativeService do
     ]
 
     {:ok, content, state}
+  end
+
+  defp build_operation_guidance(operation, expression, variable, substitutions) do
+    guidance_map = %{
+      "solve" => fn ->
+        "To solve the equation #{expression} for #{variable || "a variable"}, use the sympy_solve tool with the equation and variable parameters."
+      end,
+      "simplify" => fn ->
+        "To simplify the expression #{expression}, use the sympy_simplify tool with the expression parameter."
+      end,
+      "differentiate" => fn ->
+        "To differentiate #{expression} with respect to #{variable || "a variable"}, use the sympy_differentiate tool with the expression and variable parameters."
+      end,
+      "integrate" => fn ->
+        "To integrate #{expression} with respect to #{variable || "a variable"}, use the sympy_integrate tool with the expression and variable parameters."
+      end,
+      "expand" => fn ->
+        "To expand the expression #{expression}, use the sympy_expand tool with the expression parameter."
+      end,
+      "factor" => fn ->
+        "To factor the expression #{expression}, use the sympy_factor tool with the expression parameter."
+      end,
+      "evaluate" => fn ->
+        subs_text = if substitutions, do: " with substitutions #{substitutions}", else: ""
+
+        "To evaluate #{expression}#{subs_text}, use the sympy_evaluate tool with the expression#{if substitutions, do: " and substitutions", else: ""} parameters."
+      end
+    }
+
+    case Map.get(guidance_map, operation) do
+      nil ->
+        "Available operations: solve, simplify, differentiate, integrate, expand, factor, and evaluate. Use the appropriate tool for your operation."
+
+      guidance_fn ->
+        guidance_fn.()
+    end
   end
 end

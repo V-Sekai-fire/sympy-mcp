@@ -18,16 +18,17 @@ defmodule SympyMcp.Router do
   end
 
   # Forward all other requests to HttpPlugWrapper (which fixes SSE fallback)
-  forward "/", to: SympyMcp.HttpPlugWrapper, init_opts: [
-    handler: SympyMcp.NativeService,
-    server_info: %{
-      name: "SymPy MCP Server",
-      version: "0.1.0"
-    },
-    # Always enable SSE (never disable), but HttpPlugWrapper will fallback to HTTP if no SSE connection
-    # Set MCP_SSE_ENABLED=false to disable SSE entirely (not recommended)
-    sse_enabled: System.get_env("MCP_SSE_ENABLED") != "false",
-    cors_enabled: true
-  ]
+  forward "/",
+    to: SympyMcp.HttpPlugWrapper,
+    init_opts: [
+      handler: SympyMcp.NativeService,
+      server_info: %{
+        name: "SymPy MCP Server",
+        version: "1.0.0-dev1"
+      },
+      # Always enable SSE (never disable), but HttpPlugWrapper will fallback to HTTP if no SSE connection
+      # Set MCP_SSE_ENABLED=false to disable SSE entirely (not recommended)
+      sse_enabled: System.get_env("MCP_SSE_ENABLED") != "false",
+      cors_enabled: true
+    ]
 end
-

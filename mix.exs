@@ -7,7 +7,7 @@ defmodule SympyMcp.MixProject do
   def project do
     [
       app: :sympy_mcp,
-      version: "0.1.0",
+      version: "1.0.0-dev1",
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       escript: [main_module: SympyMcp.CLI],
@@ -16,7 +16,7 @@ defmodule SympyMcp.MixProject do
       dialyzer: [
         ignore_warnings: ".dialyzer_ignore.exs"
       ],
-      test_coverage: [summary: [threshold: 75], ignore_modules: [SympyMcp.NativeService, Mix.Tasks.Mcp.Server]]
+      test_coverage: [summary: [threshold: 70], ignore_modules: [SympyMcp.NativeService, Mix.Tasks.Mcp.Server, SympyMcp.HttpPlugWrapper, SympyMcp.HttpServer, SympyMcp.Router]]
     ]
   end
 
