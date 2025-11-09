@@ -2,7 +2,7 @@
 # Copyright (c) 2025-present K. S. Ernest (iFire) Lee
 
 # Build stage
-FROM almalinux:10 AS builder
+FROM almalinux:9 AS builder
 
 WORKDIR /app
 
@@ -19,19 +19,22 @@ RUN dnf update -y && dnf install -y \
     ca-certificates \
     ncurses-devel
 
-# Install Erlang/OTP 28
+# Install Erlang/OTP from EPEL (available in AlmaLinux 9)
 RUN dnf install -y epel-release && \
-    dnf install -y erlang erlang-erl_interface
+    dnf install -y erlang erlang-erl_interface && \
+    erl -version
 
 # Install Elixir 1.19 from precompiled binaries
+# Using v1.19-latest tag for latest 1.19.x release
 RUN cd /tmp && \
-    curl -L https://github.com/elixir-lang/elixir/releases/download/v1.19.4/elixir-otp-28.zip -o elixir.zip && \
-    unzip elixir.zip && \
+    curl -Lf https://github.com/elixir-lang/elixir/releases/download/v1.19-latest/elixir-otp-28.zip -o elixir.zip && \
+    unzip -q elixir.zip && \
     mkdir -p /opt/elixir && \
     mv bin lib man /opt/elixir/ && \
-    rm elixir.zip
+    rm -rf elixir.zip && \
+    /opt/elixir/bin/elixir --version
 
-ENV PATH="/opt/elixir/bin:${PATH}"
+ENV PATH="/opt/elixir/bin:/usr/local/bin:${PATH}"
 
 # Install hex and rebar
 RUN mix local.hex --force && \
@@ -55,31 +58,28 @@ RUN mix compile
 RUN MIX_ENV=prod mix release
 
 # Runtime stage
-FROM almalinux:10
+FROM almalinux:9
 
 WORKDIR /app
 
 # Install runtime dependencies including Python for SymPy
-RUN dnf update -y && dnf install -y \
+# Note: Mix releases include ERTS, but we install Erlang from repos for compatibility
+# Install Erlang from EPEL (same as builder)
+RUN dnf update -y && \
+    dnf install -y epel-release && \
+    dnf install -y \
     openssl \
     ncurses-libs \
     libstdc++ \
     erlang \
     wget \
-    curl \
-    unzip \
     python3 \
     python3-pip \
     ca-certificates && \
     dnf clean all
 
-# Install Elixir 1.19 from precompiled binaries
-RUN cd /tmp && \
-    curl -L https://github.com/elixir-lang/elixir/releases/download/v1.19.4/elixir-otp-28.zip -o elixir.zip && \
-    unzip elixir.zip && \
-    mkdir -p /opt/elixir && \
-    mv bin lib man /opt/elixir/ && \
-    rm elixir.zip
+# Copy Elixir installation from builder
+COPY --from=builder /opt/elixir /opt/elixir
 
 ENV PATH="/opt/elixir/bin:${PATH}"
 

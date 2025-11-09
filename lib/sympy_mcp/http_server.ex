@@ -25,12 +25,24 @@ defmodule SympyMcp.HttpServer do
     port = get_port(opts)
     host = Keyword.get(opts, :host, "0.0.0.0")
 
+    server_info = %{
+      name: "SymPy MCP Server",
+      version: "0.1.0"
+    }
+
+    plug_opts = [
+      handler: SympyMcp.NativeService,
+      server_info: server_info,
+      sse_enabled: Keyword.get(opts, :sse_enabled, true),
+      cors_enabled: Keyword.get(opts, :cors_enabled, true)
+    ]
+
     Logger.info("Starting SymPy MCP HTTP server on #{host}:#{port}")
 
-    # Use Router to mount /mcp endpoint
-    case Plug.Cowboy.http(SympyMcp.Router, [], port: port, ip: parse_host(host)) do
+    # ExMCP.HttpPlug handles all POST requests, so it works at root or /mcp
+    case Plug.Cowboy.http(ExMCP.HttpPlug, plug_opts, port: port, ip: parse_host(host)) do
       {:ok, pid} ->
-        Logger.info("SymPy MCP HTTP server started successfully on port #{port} at /mcp")
+        Logger.info("SymPy MCP HTTP server started successfully on port #{port}")
         {:ok, pid}
 
       {:error, {:already_started, pid}} ->
