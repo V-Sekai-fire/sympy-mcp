@@ -66,8 +66,10 @@ FROM almalinux:9
 
 WORKDIR /app
 
-# Install runtime dependencies including Python for SymPy
+# Install runtime dependencies
 # Note: Mix releases include ERTS, but we install Erlang from repos for compatibility
+# Note: pythonx manages its own Python environment, so we don't need to install
+#       Python packages here - they're bundled with the release
 # Install Erlang/OTP 26 from EPEL (same as builder)
 RUN dnf update -y && \
     dnf install -y epel-release && \
@@ -77,8 +79,6 @@ RUN dnf update -y && \
     libstdc++ \
     erlang \
     wget \
-    python3 \
-    python3-pip \
     ca-certificates \
     glibc-langpack-en && \
     localedef -c -i en_US -f UTF-8 en_US.UTF-8 || true && \
@@ -89,8 +89,8 @@ COPY --from=builder /opt/elixir /opt/elixir
 
 ENV PATH="/opt/elixir/bin:${PATH}"
 
-# Install SymPy (pythonx will use this)
-RUN pip3 install --no-cache-dir sympy mpmath
+# Note: SymPy and mpmath are installed by pythonx during compilation
+# No need to install them here as pythonx manages its own Python environment
 
 # Copy the release from builder
 COPY --from=builder /app/_build/prod/rel/sympy_mcp ./sympy_mcp
