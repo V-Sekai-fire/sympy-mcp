@@ -20,15 +20,15 @@ RUN dnf update -y && dnf install -y --allowerasing \
     ca-certificates \
     ncurses-devel
 
-# Install Erlang/OTP from EPEL (available in AlmaLinux 9)
+# Install Erlang/OTP 26 from EPEL (available in AlmaLinux 9)
 RUN dnf install -y epel-release && \
     dnf install -y erlang erlang-erl_interface && \
     erl -version
 
-# Install Elixir 1.19 from precompiled binaries
-# Using v1.19-latest tag for latest 1.19.x release
+# Install Elixir 1.18 from precompiled binaries (compatible with OTP 26)
+# Using v1.18-latest tag for latest 1.18.x release
 RUN cd /tmp && \
-    curl -Lf https://github.com/elixir-lang/elixir/releases/download/v1.19-latest/elixir-otp-28.zip -o elixir.zip && \
+    curl -Lf https://github.com/elixir-lang/elixir/releases/download/v1.18-latest/elixir-otp-26.zip -o elixir.zip && \
     unzip -q elixir.zip && \
     mkdir -p /opt/elixir && \
     mv bin lib man /opt/elixir/ && \
@@ -36,6 +36,9 @@ RUN cd /tmp && \
     /opt/elixir/bin/elixir --version
 
 ENV PATH="/opt/elixir/bin:/usr/local/bin:${PATH}"
+ENV ELIXIR_ERL_OPTIONS="+fnu"
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 # Install hex and rebar
 RUN mix local.hex --force && \
@@ -53,7 +56,7 @@ RUN mix deps.get --only prod && \
 COPY lib ./lib
 
 # Compile the application
-RUN mix compile
+RUN MIX_ENV=prod mix compile
 
 # Build the release
 RUN MIX_ENV=prod mix release
@@ -65,7 +68,7 @@ WORKDIR /app
 
 # Install runtime dependencies including Python for SymPy
 # Note: Mix releases include ERTS, but we install Erlang from repos for compatibility
-# Install Erlang from EPEL (same as builder)
+# Install Erlang/OTP 26 from EPEL (same as builder)
 RUN dnf update -y && \
     dnf install -y epel-release && \
     dnf install -y \
@@ -76,7 +79,8 @@ RUN dnf update -y && \
     wget \
     python3 \
     python3-pip \
-    ca-certificates && \
+    ca-certificates \
+    glibc-langpack-en && \
     dnf clean all
 
 # Copy Elixir installation from builder
@@ -94,13 +98,16 @@ COPY --from=builder /app/_build/prod/rel/sympy_mcp ./sympy_mcp
 ENV MIX_ENV=prod
 ENV MCP_TRANSPORT=http
 ENV PORT=8081
+ENV ELIXIR_ERL_OPTIONS="+fnu"
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 # Expose the port
 EXPOSE 8081
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/mcp || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
 
 # Start the server
 CMD ["./sympy_mcp/bin/sympy_mcp", "start"]
