@@ -229,51 +229,6 @@ defmodule SympyMcp.NativeService do
     mime_type("application/json")
   end
 
-  # Initialize handler with optional configuration schema
-  @impl true
-  def handle_initialize(params, state) do
-    # Define optional configuration schema
-    # All fields are optional since the server works with environment variables and defaults
-    config_schema = %{
-      type: "object",
-      properties: %{
-        python_path: %{
-          type: "string",
-          description: "Optional path to Python executable. If not provided, auto-detected via pythonx."
-        },
-        timeout: %{
-          type: "integer",
-          description:
-            "Optional timeout in milliseconds for SymPy operations. If not provided, no timeout is enforced.",
-          minimum: 100
-        },
-        max_complexity: %{
-          type: "integer",
-          description:
-            "Optional maximum expression complexity to prevent resource exhaustion. If not provided, complexity is unlimited.",
-          minimum: 1
-        }
-      },
-      additionalProperties: false
-    }
-
-    # Return initialize response with config schema
-    {:ok,
-     %{
-       protocolVersion: Map.get(params, "protocolVersion", "2025-06-18"),
-       serverInfo: %{
-         name: "SymPy MCP Server",
-         version: "1.0.0-dev1"
-       },
-       capabilities: %{
-         tools: %{},
-         resources: %{},
-         prompts: %{}
-       },
-       configSchema: config_schema
-     }, state}
-  end
-
   # Tool call handlers
   @impl true
   def handle_tool_call(tool_name, args, state) do
