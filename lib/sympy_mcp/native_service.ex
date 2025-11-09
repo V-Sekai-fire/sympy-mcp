@@ -229,10 +229,10 @@ defmodule SympyMcp.NativeService do
     mime_type("application/json")
   end
 
-  # Initialize handler with required configuration schema
+  # Initialize handler with optional configuration schema
   @impl true
   def handle_initialize(params, state) do
-    # Validate required configuration
+    # Validate optional configuration
     config = Map.get(params, "config", %{})
 
     case validate_config(config) do
@@ -240,7 +240,7 @@ defmodule SympyMcp.NativeService do
         # Store config in state for use in tool handlers
         new_state = Map.put(state, :config, validated_config)
 
-        # Define required configuration schema (JSON Schema format)
+        # Define optional configuration schema (JSON Schema format)
         config_schema = %{
           "$schema" => "http://json-schema.org/draft-07/schema#",
           "title" => "SymPy MCP Server Configuration",
@@ -249,13 +249,12 @@ defmodule SympyMcp.NativeService do
             "timeout_ms" => %{
               "type" => "integer",
               "description" =>
-                "Maximum time in milliseconds allowed for SymPy operations. Prevents resource exhaustion and DoS attacks.",
+                "Optional maximum time in milliseconds allowed for SymPy operations. If not provided, no timeout is enforced. Prevents resource exhaustion and DoS attacks.",
               "minimum" => 100,
               "maximum" => 300_000,
               "examples" => [5_000, 10_000, 30_000]
             }
           },
-          "required" => ["timeout_ms"],
           "additionalProperties" => false
         }
 
@@ -282,7 +281,8 @@ defmodule SympyMcp.NativeService do
   defp validate_config(config) do
     case Map.get(config, "timeout_ms") do
       nil ->
-        {:error, "timeout_ms is required"}
+        # Timeout is optional, so nil is valid
+        {:ok, %{}}
 
       timeout when is_integer(timeout) and timeout >= 100 and timeout <= 300_000 ->
         {:ok, %{timeout_ms: timeout}}
