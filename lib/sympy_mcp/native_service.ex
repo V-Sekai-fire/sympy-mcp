@@ -151,57 +151,66 @@ defmodule SympyMcp.NativeService do
   end
 
   def handle_tool_call(tool_name, args, state) do
-    case tool_name do
-      "sympy_solve" ->
-        handle_sympy_operation(
-          &SympyMcp.SympyTools.solve/2,
-          [args["equation"], args["variable"]],
-          "solve equation",
-          state
-        )
+    result = dispatch_tool_primary(tool_name, args, state) || dispatch_tool_secondary(tool_name, args, state)
 
-      "sympy_simplify" ->
-        handle_sympy_operation(&SympyMcp.SympyTools.simplify/1, [args["expression"]], "simplify expression", state)
-
-      "sympy_differentiate" ->
-        handle_sympy_operation(
-          &SympyMcp.SympyTools.differentiate/2,
-          [args["expression"], args["variable"]],
-          "differentiate expression",
-          state
-        )
-
-      "sympy_integrate" ->
-        handle_sympy_operation(
-          &SympyMcp.SympyTools.integrate/2,
-          [args["expression"], args["variable"]],
-          "integrate expression",
-          state
-        )
-
-      "sympy_expand" ->
-        handle_sympy_operation(&SympyMcp.SympyTools.expand/1, [args["expression"]], "expand expression", state)
-
-      "sympy_factor" ->
-        handle_sympy_operation(&SympyMcp.SympyTools.factor/1, [args["expression"]], "factor expression", state)
-
-      "sympy_evaluate" ->
-        substitutions = Map.get(args, "substitutions", %{})
-
-        handle_sympy_operation(
-          &SympyMcp.SympyTools.evaluate/2,
-          [args["expression"], substitutions],
-          "evaluate expression",
-          state
-        )
-
-      "sympy_list_operations" ->
-        handle_list_operations(state)
-
-      _ ->
-        {:error, "Tool not found: #{tool_name}", state}
+    if result do
+      result
+    else
+      {:error, "Tool not found: #{tool_name}", state}
     end
   end
+
+  defp dispatch_tool_primary("sympy_solve", args, state),
+    do:
+      handle_sympy_operation(
+        &SympyMcp.SympyTools.solve/2,
+        [args["equation"], args["variable"]],
+        "solve equation",
+        state
+      )
+
+  defp dispatch_tool_primary("sympy_simplify", args, state),
+    do: handle_sympy_operation(&SympyMcp.SympyTools.simplify/1, [args["expression"]], "simplify expression", state)
+
+  defp dispatch_tool_primary("sympy_differentiate", args, state),
+    do:
+      handle_sympy_operation(
+        &SympyMcp.SympyTools.differentiate/2,
+        [args["expression"], args["variable"]],
+        "differentiate expression",
+        state
+      )
+
+  defp dispatch_tool_primary("sympy_integrate", args, state),
+    do:
+      handle_sympy_operation(
+        &SympyMcp.SympyTools.integrate/2,
+        [args["expression"], args["variable"]],
+        "integrate expression",
+        state
+      )
+
+  defp dispatch_tool_primary(_, _, _), do: nil
+
+  defp dispatch_tool_secondary("sympy_expand", args, state),
+    do: handle_sympy_operation(&SympyMcp.SympyTools.expand/1, [args["expression"]], "expand expression", state)
+
+  defp dispatch_tool_secondary("sympy_factor", args, state),
+    do: handle_sympy_operation(&SympyMcp.SympyTools.factor/1, [args["expression"]], "factor expression", state)
+
+  defp dispatch_tool_secondary("sympy_evaluate", args, state) do
+    substitutions = Map.get(args, "substitutions", %{})
+
+    handle_sympy_operation(
+      &SympyMcp.SympyTools.evaluate/2,
+      [args["expression"], substitutions],
+      "evaluate expression",
+      state
+    )
+  end
+
+  defp dispatch_tool_secondary("sympy_list_operations", _args, state), do: handle_list_operations(state)
+  defp dispatch_tool_secondary(_, _, _), do: nil
 
   defp handle_list_operations(state) do
     operations = [

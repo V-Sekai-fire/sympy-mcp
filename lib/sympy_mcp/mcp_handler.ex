@@ -112,32 +112,35 @@ defmodule SympyMcp.MCPHandler do
   defp build_operation_guidance(operation, expression, variable) do
     base = "Use the sympy_#{operation} tool with the appropriate parameters."
 
-    case operation do
-      "solve" ->
-        "To solve the equation #{expression} for #{variable || "a variable"}, use sympy_solve with equation and variable."
-
-      "simplify" ->
-        "To simplify #{expression}, use sympy_simplify with expression."
-
-      "differentiate" ->
-        "To differentiate #{expression} w.r.t. #{variable || "x"}, use sympy_differentiate with expression and variable."
-
-      "integrate" ->
-        "To integrate #{expression} w.r.t. #{variable || "x"}, use sympy_integrate with expression and variable."
-
-      "expand" ->
-        "To expand #{expression}, use sympy_expand with expression."
-
-      "factor" ->
-        "To factor #{expression}, use sympy_factor with expression."
-
-      "evaluate" ->
-        "To evaluate #{expression} numerically, use sympy_evaluate with expression and optional substitutions."
-
-      _ ->
-        "Available operations: solve, simplify, differentiate, integrate, expand, factor, evaluate. " <> base
-    end
+    guidance_primary(operation, expression, variable) ||
+      guidance_secondary(operation, expression, variable) ||
+      "Available operations: solve, simplify, differentiate, integrate, expand, factor, evaluate. " <> base
   end
+
+  defp guidance_primary("solve", expr, var),
+    do: "To solve the equation #{expr} for #{var || "a variable"}, use sympy_solve with equation and variable."
+
+  defp guidance_primary("simplify", expr, _var),
+    do: "To simplify #{expr}, use sympy_simplify with expression."
+
+  defp guidance_primary("differentiate", expr, var),
+    do: "To differentiate #{expr} w.r.t. #{var || "x"}, use sympy_differentiate with expression and variable."
+
+  defp guidance_primary("integrate", expr, var),
+    do: "To integrate #{expr} w.r.t. #{var || "x"}, use sympy_integrate with expression and variable."
+
+  defp guidance_primary(_, _, _), do: nil
+
+  defp guidance_secondary("expand", expr, _var),
+    do: "To expand #{expr}, use sympy_expand with expression."
+
+  defp guidance_secondary("factor", expr, _var),
+    do: "To factor #{expr}, use sympy_factor with expression."
+
+  defp guidance_secondary("evaluate", expr, _var),
+    do: "To evaluate #{expr} numerically, use sympy_evaluate with expression and optional substitutions."
+
+  defp guidance_secondary(_, _, _), do: nil
 
   @impl true
   def handle_call_tool(name, arguments, state) do
