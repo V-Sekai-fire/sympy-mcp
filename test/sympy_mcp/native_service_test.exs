@@ -14,7 +14,7 @@ defmodule SympyMcp.NativeServiceTest do
       case NativeService.handle_tool_call("sympy_solve", args, state) do
         {:ok, result, new_state} ->
           assert is_map(result)
-          assert Map.has_key?(result, :content)
+          assert Map.has_key?(result, "content")
           assert new_state == state
 
         {:error, _reason, new_state} ->
@@ -29,7 +29,7 @@ defmodule SympyMcp.NativeServiceTest do
       case NativeService.handle_tool_call("sympy_simplify", args, state) do
         {:ok, result, new_state} ->
           assert is_map(result)
-          assert Map.has_key?(result, :content)
+          assert Map.has_key?(result, "content")
           assert new_state == state
 
         {:error, _reason, new_state} ->
