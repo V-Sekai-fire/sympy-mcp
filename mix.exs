@@ -42,7 +42,7 @@ defmodule SympyMcp.MixProject do
       {:ex_mcp, "~> 0.8"},
       {:jason, "~> 1.4"},
       {:pythonx, "~> 0.4.0", runtime: false},
-      {:dialyxir, "~> 1.4.6", only: [:dev], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
