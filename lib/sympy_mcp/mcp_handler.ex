@@ -32,6 +32,7 @@ defmodule SympyMcp.MCPHandler do
       SympyMcp.NativeService.get_tools()
       |> Map.values()
       |> Enum.map(fn t -> %{name: t.name, description: t.description, inputSchema: t.input_schema} end)
+
     {:ok, tools, nil, state}
   end
 
@@ -40,9 +41,11 @@ defmodule SympyMcp.MCPHandler do
     prompts = [
       %{
         name: "symbolic_math_helper",
-        description: "Helps users perform symbolic mathematics operations with SymPy (solve, simplify, differentiate, integrate, expand, factor, evaluate)."
+        description:
+          "Helps users perform symbolic mathematics operations with SymPy (solve, simplify, differentiate, integrate, expand, factor, evaluate)."
       }
     ]
+
     {:ok, prompts, nil, state}
   end
 
@@ -54,9 +57,17 @@ defmodule SympyMcp.MCPHandler do
     guidance = build_operation_guidance(operation, expression, variable)
 
     messages = [
-      %{role: "user", content: %{type: "text", text: "I want to #{operation} the expression: #{expression}#{if variable, do: " with variable #{variable}", else: ""}"}},
+      %{
+        role: "user",
+        content: %{
+          type: "text",
+          text:
+            "I want to #{operation} the expression: #{expression}#{if variable, do: " with variable #{variable}", else: ""}"
+        }
+      },
       %{role: "assistant", content: %{type: "text", text: guidance}}
     ]
+
     {:ok, %{messages: messages}, state}
   end
 
@@ -73,6 +84,7 @@ defmodule SympyMcp.MCPHandler do
         description: "Common example expressions for testing SymPy operations"
       }
     ]
+
     {:ok, resources, nil, state}
   end
 
@@ -88,6 +100,7 @@ defmodule SympyMcp.MCPHandler do
 
     Use these with sympy_solve, sympy_simplify, sympy_differentiate, sympy_integrate, etc.
     """
+
     content = [%{uri: "sympy://examples", text: String.trim(text), mimeType: "text/plain"}]
     {:ok, content, state}
   end
@@ -98,15 +111,31 @@ defmodule SympyMcp.MCPHandler do
 
   defp build_operation_guidance(operation, expression, variable) do
     base = "Use the sympy_#{operation} tool with the appropriate parameters."
+
     case operation do
-      "solve" -> "To solve the equation #{expression} for #{variable || "a variable"}, use sympy_solve with equation and variable."
-      "simplify" -> "To simplify #{expression}, use sympy_simplify with expression."
-      "differentiate" -> "To differentiate #{expression} w.r.t. #{variable || "x"}, use sympy_differentiate with expression and variable."
-      "integrate" -> "To integrate #{expression} w.r.t. #{variable || "x"}, use sympy_integrate with expression and variable."
-      "expand" -> "To expand #{expression}, use sympy_expand with expression."
-      "factor" -> "To factor #{expression}, use sympy_factor with expression."
-      "evaluate" -> "To evaluate #{expression} numerically, use sympy_evaluate with expression and optional substitutions."
-      _ -> "Available operations: solve, simplify, differentiate, integrate, expand, factor, evaluate. " <> base
+      "solve" ->
+        "To solve the equation #{expression} for #{variable || "a variable"}, use sympy_solve with equation and variable."
+
+      "simplify" ->
+        "To simplify #{expression}, use sympy_simplify with expression."
+
+      "differentiate" ->
+        "To differentiate #{expression} w.r.t. #{variable || "x"}, use sympy_differentiate with expression and variable."
+
+      "integrate" ->
+        "To integrate #{expression} w.r.t. #{variable || "x"}, use sympy_integrate with expression and variable."
+
+      "expand" ->
+        "To expand #{expression}, use sympy_expand with expression."
+
+      "factor" ->
+        "To factor #{expression}, use sympy_factor with expression."
+
+      "evaluate" ->
+        "To evaluate #{expression} numerically, use sympy_evaluate with expression and optional substitutions."
+
+      _ ->
+        "Available operations: solve, simplify, differentiate, integrate, expand, factor, evaluate. " <> base
     end
   end
 

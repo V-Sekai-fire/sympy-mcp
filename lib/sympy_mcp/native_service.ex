@@ -96,7 +96,9 @@ defmodule SympyMcp.NativeService do
         description: "Expands a symbolic expression using SymPy",
         input_schema: %{
           "type" => "object",
-          "properties" => %{"expression" => %{"type" => "string", "description" => "String representation of the expression"}},
+          "properties" => %{
+            "expression" => %{"type" => "string", "description" => "String representation of the expression"}
+          },
           "required" => ["expression"]
         }
       },
@@ -105,7 +107,9 @@ defmodule SympyMcp.NativeService do
         description: "Factors a symbolic expression using SymPy",
         input_schema: %{
           "type" => "object",
-          "properties" => %{"expression" => %{"type" => "string", "description" => "String representation of the expression"}},
+          "properties" => %{
+            "expression" => %{"type" => "string", "description" => "String representation of the expression"}
+          },
           "required" => ["expression"]
         }
       },
@@ -183,6 +187,7 @@ defmodule SympyMcp.NativeService do
 
       "sympy_evaluate" ->
         substitutions = Map.get(args, "substitutions", %{})
+
         handle_sympy_operation(
           &SympyMcp.SympyTools.evaluate/2,
           [args["expression"], substitutions],
@@ -208,6 +213,7 @@ defmodule SympyMcp.NativeService do
       "sympy_factor",
       "sympy_evaluate"
     ]
+
     body = Jason.encode!(%{"operations" => operations})
     {:ok, %{"content" => [%{"type" => "text", "text" => body}], "isError" => false}, state}
   end
