@@ -116,17 +116,12 @@ The server supports optional configuration during initialization:
 
 **Environment Variables:**
 
-- `MCP_TRANSPORT` - Transport type (`"http"` or `"stdio"`)
 - `PORT` - HTTP server port (default: 8081)
 - `HOST` - HTTP server host (default: `0.0.0.0` if PORT set, else `localhost`)
 - `MIX_ENV` - Environment (`prod`, `dev`, `test`)
 - `ELIXIR_ERL_OPTIONS` - Erlang options (set to `"+fnu"` for UTF-8)
 
-**Transport Selection:**
-
-1. If `MCP_TRANSPORT` is set, use that transport
-2. If `PORT` is set, use HTTP transport
-3. Otherwise, use STDIO transport (default)
+The server uses HTTP streaming only (no stdio transport).
 
 ## Troubleshooting
 

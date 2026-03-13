@@ -2,46 +2,25 @@
 # Copyright (c) 2025-present K. S. Ernest (iFire) Lee
 
 defmodule SympyMcp.Application do
-  @moduledoc false
+  @moduledoc """
+  Application supervisor for SymPy MCP Server.
+  Starts HTTP streaming transport only (no stdio). Use PORT / HOST to configure.
+  """
 
   use Application
 
   @spec start(:normal | :permanent | :transient, any()) :: {:ok, pid()}
   @impl true
   def start(_type, _args) do
-    # Ensure Pythonx is started for SymPy support
     Application.ensure_all_started(:pythonx)
 
-    # Determine transport based on environment
-    transport = get_transport()
+    port = get_port()
+    host = get_host()
 
-    children =
-      case transport do
-        :http ->
-          port = get_port()
-          host = get_host()
-
-          # Start NativeService directly with HTTP transport and SSE enabled
-          # This matches the pattern from deps/ex_mcp/examples/getting_started/03_http_sse_server.exs
-          [
-            {
-              SympyMcp.NativeService,
-              [
-                transport: :http,
-                port: port,
-                host: host,
-                use_sse: true,
-                name: SympyMcp.NativeService
-              ]
-            }
-          ]
-
-        :stdio ->
-          [
-            {SympyMcp.NativeService, [name: SympyMcp.NativeService]},
-            {SympyMcp.StdioServer, []}
-          ]
-      end
+    children = [
+      {SympyMcp.NativeService, [name: SympyMcp.NativeService]},
+      {SympyMcp.HttpServer, [port: port, host: host]}
+    ]
 
     opts = [strategy: :one_for_one, name: SympyMcp.Supervisor]
     Supervisor.start_link(children, opts)
@@ -55,29 +34,9 @@ defmodule SympyMcp.Application do
   end
 
   defp get_host do
-    # Use 0.0.0.0 for Docker/container deployments to accept external connections
-    # Use localhost for local development
     case System.get_env("HOST") do
-      nil ->
-        # Default to 0.0.0.0 if PORT is set (container deployment), otherwise localhost
-        if System.get_env("PORT"), do: "0.0.0.0", else: "localhost"
-
-      host ->
-        host
-    end
-  end
-
-  defp get_transport do
-    case System.get_env("MCP_TRANSPORT") do
-      "http" ->
-        :http
-
-      "stdio" ->
-        :stdio
-
-      _ ->
-        # Default to http if PORT is set (Smithery deployment), otherwise stdio
-        if System.get_env("PORT"), do: :http, else: :stdio
+      nil -> if System.get_env("PORT"), do: "0.0.0.0", else: "localhost"
+      host -> host
     end
   end
 end

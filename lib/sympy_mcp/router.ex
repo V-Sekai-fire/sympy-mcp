@@ -3,8 +3,8 @@
 
 defmodule SympyMcp.Router do
   @moduledoc """
-  Router for SymPy MCP HTTP server.
-  Adds health check endpoint and forwards MCP requests to ExMCP.HttpPlug.
+  Router for SymPy MCP HTTP server (streamableHttp).
+  Health check at /health; all other requests go to ExMCP.HttpPlug with SSE enabled.
   """
 
   use Plug.Router
@@ -17,18 +17,14 @@ defmodule SympyMcp.Router do
     send_resp(conn, 200, Jason.encode!(%{status: "ok"}))
   end
 
-  # Forward all other requests to HttpPlugWrapper (which fixes SSE fallback)
+  # Streamable HTTP: ExMCP.HttpPlug with SSE (same pattern as vsekai MCP)
   forward "/",
-    to: SympyMcp.HttpPlugWrapper,
+    to: ExMCP.HttpPlug,
     init_opts: [
-      handler: SympyMcp.NativeService,
-      server_info: %{
-        name: "SymPy MCP Server",
-        version: "1.0.0-dev1"
-      },
-      # Always enable SSE (never disable), but HttpPlugWrapper will fallback to HTTP if no SSE connection
-      # Set MCP_SSE_ENABLED=false to disable SSE entirely (not recommended)
+      handler: SympyMcp.MCPHandler,
+      server_info: %{name: "SymPy MCP Server", version: "1.0.0-dev1"},
       sse_enabled: System.get_env("MCP_SSE_ENABLED") != "false",
-      cors_enabled: true
+      cors_enabled: true,
+      oauth_enabled: false
     ]
 end

@@ -18,9 +18,9 @@ defmodule SympyMcp.MixProject do
       test_coverage: [
         summary: [threshold: 70],
         ignore_modules: [
+          SympyMcp.MCPHandler,
           SympyMcp.NativeService,
           Mix.Tasks.Mcp.Server,
-          SympyMcp.HttpPlugWrapper,
           SympyMcp.HttpServer,
           SympyMcp.Router
         ]
@@ -39,7 +39,7 @@ defmodule SympyMcp.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_mcp, git: "https://github.com/fire/ex_mcp.git", branch: "master"},
+      {:ex_mcp, "~> 0.8"},
       {:jason, "~> 1.4"},
       {:pythonx, "~> 0.4.0", runtime: false},
       {:dialyxir, "~> 1.4.6", only: [:dev], runtime: false},

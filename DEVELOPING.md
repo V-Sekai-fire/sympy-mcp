@@ -14,20 +14,12 @@ mix release       # Build release
 
 ### Key Components
 
-- `SympyMcp.Application` - Main supervisor with transport selection
-- `SympyMcp.NativeService` - MCP server implementation (ExMCP)
+- `SympyMcp.Application` - Main supervisor (HTTP only)
+- `SympyMcp.NativeService` - MCP tool execution (GenServer)
+- `SympyMcp.MCPHandler` - ExMCP Handler (tools list + delegate to NativeService)
 - `SympyMcp.SympyTools` - Core SymPy functionality via Pythonx
-- `SympyMcp.StdioServer` / `SympyMcp.HttpServer` - Transport implementations
-- `SympyMcp.Router` - HTTP router with health check endpoint
-- `SympyMcp.HttpPlugWrapper` - SSE session ID fix wrapper
-
-### Transport Selection
-
-The application automatically selects the transport based on environment variables:
-
-1. If `MCP_TRANSPORT` is set to `"http"` or `"stdio"`, that transport is used
-2. If `PORT` environment variable is set, HTTP transport is used (for containerized deployments)
-3. Otherwise, STDIO transport is used (default for local development)
+- `SympyMcp.HttpServer` - HTTP server (streaming)
+- `SympyMcp.Router` - HTTP router with health check; forwards to ExMCP.HttpPlug (streamableHttp)
 
 ## Dependencies
 

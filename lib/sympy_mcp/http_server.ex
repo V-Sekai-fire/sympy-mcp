@@ -3,8 +3,8 @@
 
 defmodule SympyMcp.HttpServer do
   @moduledoc """
-  HTTP server for SymPy MCP using ExMCP.HttpPlug.
-  Provides HTTP transport for MCP protocol with CORS support.
+  HTTP server for SymPy MCP (streamableHttp).
+  Uses ExMCP.HttpPlug with SSE; CORS enabled. Point clients at this URL with transport streamableHttp.
   """
 
   require Logger
@@ -25,7 +25,7 @@ defmodule SympyMcp.HttpServer do
     port = get_port(opts)
     host = Keyword.get(opts, :host, "0.0.0.0")
 
-    Logger.info("Starting SymPy MCP HTTP server on #{host}:#{port}")
+    Logger.info("SymPy MCP HTTP server (streamableHttp) on #{host}:#{port}")
 
     # Use Router which adds health check endpoint and forwards to ExMCP.HttpPlug
     case Plug.Cowboy.http(SympyMcp.Router, [], port: port, ip: parse_host(host)) do

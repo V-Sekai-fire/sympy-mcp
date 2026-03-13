@@ -3,300 +3,149 @@
 
 defmodule SympyMcp.NativeService do
   @moduledoc """
-  Native BEAM service for SymPy MCP using ex_mcp library.
-  Provides symbolic mathematics tools via MCP protocol.
+  SymPy MCP tool execution and tool list (no deftool DSL).
+  Runs as a named GenServer; MCPHandler calls get_tools/0 and GenServer.call(..., :execute_tool) over HTTP streaming.
   """
 
-  # Suppress warnings from ex_mcp DSL generated code
-  @compile {:no_warn_undefined, :no_warn_pattern}
+  use GenServer
 
-  use ExMCP.Server,
-    name: "SymPy MCP Server",
-    version: "1.0.0-dev1"
-
-  # Define SymPy tools using ex_mcp DSL
-  deftool "sympy_solve" do
-    meta do
-      name("Solve Equation")
-      description("Solves a symbolic equation for a variable using SymPy")
-    end
-
-    input_schema(%{
-      type: "object",
-      properties: %{
-        equation: %{
-          type: "string",
-          description: "String representation of the equation (e.g., 'x**2 - 1')"
-        },
-        variable: %{
-          type: "string",
-          description: "String representation of the variable to solve for (e.g., 'x')"
-        }
-      },
-      required: ["equation", "variable"]
-    })
-
-    tool_annotations(%{
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true
-    })
+  @spec child_spec(term()) :: Supervisor.child_spec()
+  def child_spec(opts) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [opts]},
+      type: :worker,
+      restart: :permanent,
+      shutdown: 5000
+    }
   end
 
-  deftool "sympy_simplify" do
-    meta do
-      name("Simplify Expression")
-      description("Simplifies a symbolic expression using SymPy")
-    end
-
-    input_schema(%{
-      type: "object",
-      properties: %{
-        expression: %{
-          type: "string",
-          description: "String representation of the expression"
-        }
-      },
-      required: ["expression"]
-    })
-
-    tool_annotations(%{
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true
-    })
+  def start_link(opts \\ []) do
+    name = Keyword.get(opts, :name)
+    genserver_opts = if name, do: [name: name], else: []
+    GenServer.start_link(__MODULE__, opts, genserver_opts)
   end
 
-  deftool "sympy_differentiate" do
-    meta do
-      name("Differentiate Expression")
-      description("Computes the derivative of an expression using SymPy")
-    end
-
-    input_schema(%{
-      type: "object",
-      properties: %{
-        expression: %{
-          type: "string",
-          description: "String representation of the expression"
-        },
-        variable: %{
-          type: "string",
-          description: "String representation of the variable to differentiate with respect to"
-        }
-      },
-      required: ["expression", "variable"]
-    })
-
-    tool_annotations(%{
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true
-    })
-  end
-
-  deftool "sympy_integrate" do
-    meta do
-      name("Integrate Expression")
-      description("Computes the integral of an expression using SymPy")
-    end
-
-    input_schema(%{
-      type: "object",
-      properties: %{
-        expression: %{
-          type: "string",
-          description: "String representation of the expression"
-        },
-        variable: %{
-          type: "string",
-          description: "String representation of the variable to integrate with respect to"
-        }
-      },
-      required: ["expression", "variable"]
-    })
-
-    tool_annotations(%{
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true
-    })
-  end
-
-  deftool "sympy_expand" do
-    meta do
-      name("Expand Expression")
-      description("Expands a symbolic expression using SymPy")
-    end
-
-    input_schema(%{
-      type: "object",
-      properties: %{
-        expression: %{
-          type: "string",
-          description: "String representation of the expression"
-        }
-      },
-      required: ["expression"]
-    })
-
-    tool_annotations(%{
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true
-    })
-  end
-
-  deftool "sympy_factor" do
-    meta do
-      name("Factor Expression")
-      description("Factors a symbolic expression using SymPy")
-    end
-
-    input_schema(%{
-      type: "object",
-      properties: %{
-        expression: %{
-          type: "string",
-          description: "String representation of the expression"
-        }
-      },
-      required: ["expression"]
-    })
-
-    tool_annotations(%{
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true
-    })
-  end
-
-  deftool "sympy_evaluate" do
-    meta do
-      name("Evaluate Expression")
-      description("Evaluates a symbolic expression numerically using SymPy")
-    end
-
-    input_schema(%{
-      type: "object",
-      properties: %{
-        expression: %{
-          type: "string",
-          description: "String representation of the expression"
-        },
-        substitutions: %{
-          type: "object",
-          description: "Map of variable names to numeric values for substitution"
-        }
-      },
-      required: ["expression"]
-    })
-
-    tool_annotations(%{
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true
-    })
-  end
-
-  # Define prompts
-  defprompt "symbolic_math_helper" do
-    meta do
-      name("Symbolic Math Helper")
-      description("Helps users perform symbolic mathematics operations with SymPy")
-    end
-
-    arguments do
-      arg(:operation,
-        required: true,
-        description:
-          "The mathematical operation to perform (solve, simplify, differentiate, integrate, expand, factor, or evaluate)"
-      )
-
-      arg(:expression, required: true, description: "The mathematical expression to work with")
-      arg(:variable, description: "The variable to use (required for solve, differentiate, and integrate operations)")
-      arg(:substitutions, description: "Variable substitutions for evaluation (JSON object)")
-    end
-  end
-
-  # Define resources
-  defresource "sympy://examples" do
-    meta do
-      name("SymPy Example Expressions")
-      description("Common example expressions for testing SymPy operations")
-    end
-
-    mime_type("application/json")
-  end
-
-  # Initialize handler with optional configuration schema
-  @impl true
-  def handle_initialize(params, state) do
-    # Validate optional configuration
-    config = Map.get(params, "config", %{})
-
-    case validate_config(config) do
-      {:ok, validated_config} ->
-        # Store config in state for use in tool handlers
-        new_state = Map.put(state, :config, validated_config)
-
-        # Define optional configuration schema (JSON Schema format)
-        config_schema = %{
-          "$schema" => "http://json-schema.org/draft-07/schema#",
-          "title" => "SymPy MCP Server Configuration",
+  @doc false
+  def get_tools do
+    %{
+      "sympy_solve" => %{
+        name: "sympy_solve",
+        description: "Solves a symbolic equation for a variable using SymPy",
+        input_schema: %{
           "type" => "object",
           "properties" => %{
-            "timeout_ms" => %{
-              "type" => "integer",
-              "description" =>
-                "Optional maximum time in milliseconds allowed for SymPy operations. If not provided, no timeout is enforced. Prevents resource exhaustion and DoS attacks.",
-              "minimum" => 100,
-              "maximum" => 300_000,
-              "examples" => [5_000, 10_000, 30_000]
+            "equation" => %{
+              "type" => "string",
+              "description" => "String representation of the equation (e.g., 'x**2 - 1')"
+            },
+            "variable" => %{
+              "type" => "string",
+              "description" => "String representation of the variable to solve for (e.g., 'x')"
             }
           },
-          "additionalProperties" => false
+          "required" => ["equation", "variable"]
         }
-
-        {:ok,
-         %{
-           protocolVersion: Map.get(params, "protocolVersion", "2025-06-18"),
-           serverInfo: %{
-             name: "SymPy MCP Server",
-             version: "1.0.0-dev1"
-           },
-           capabilities: %{
-             tools: %{},
-             resources: %{},
-             prompts: %{}
-           },
-           configSchema: config_schema
-         }, new_state}
-
-      {:error, reason} ->
-        {:error, "Invalid configuration: #{reason}", state}
-    end
+      },
+      "sympy_simplify" => %{
+        name: "sympy_simplify",
+        description: "Simplifies a symbolic expression using SymPy",
+        input_schema: %{
+          "type" => "object",
+          "properties" => %{
+            "expression" => %{
+              "type" => "string",
+              "description" => "String representation of the expression"
+            }
+          },
+          "required" => ["expression"]
+        }
+      },
+      "sympy_differentiate" => %{
+        name: "sympy_differentiate",
+        description: "Computes the derivative of an expression using SymPy",
+        input_schema: %{
+          "type" => "object",
+          "properties" => %{
+            "expression" => %{"type" => "string", "description" => "String representation of the expression"},
+            "variable" => %{
+              "type" => "string",
+              "description" => "String representation of the variable to differentiate with respect to"
+            }
+          },
+          "required" => ["expression", "variable"]
+        }
+      },
+      "sympy_integrate" => %{
+        name: "sympy_integrate",
+        description: "Computes the integral of an expression using SymPy",
+        input_schema: %{
+          "type" => "object",
+          "properties" => %{
+            "expression" => %{"type" => "string", "description" => "String representation of the expression"},
+            "variable" => %{
+              "type" => "string",
+              "description" => "String representation of the variable to integrate with respect to"
+            }
+          },
+          "required" => ["expression", "variable"]
+        }
+      },
+      "sympy_expand" => %{
+        name: "sympy_expand",
+        description: "Expands a symbolic expression using SymPy",
+        input_schema: %{
+          "type" => "object",
+          "properties" => %{"expression" => %{"type" => "string", "description" => "String representation of the expression"}},
+          "required" => ["expression"]
+        }
+      },
+      "sympy_factor" => %{
+        name: "sympy_factor",
+        description: "Factors a symbolic expression using SymPy",
+        input_schema: %{
+          "type" => "object",
+          "properties" => %{"expression" => %{"type" => "string", "description" => "String representation of the expression"}},
+          "required" => ["expression"]
+        }
+      },
+      "sympy_evaluate" => %{
+        name: "sympy_evaluate",
+        description: "Evaluates a symbolic expression numerically using SymPy",
+        input_schema: %{
+          "type" => "object",
+          "properties" => %{
+            "expression" => %{"type" => "string", "description" => "String representation of the expression"},
+            "substitutions" => %{
+              "type" => "object",
+              "description" => "Map of variable names to numeric values for substitution"
+            }
+          },
+          "required" => ["expression"]
+        }
+      },
+      "sympy_list_operations" => %{
+        name: "sympy_list_operations",
+        description:
+          "Returns the list of available SymPy tool names (solve, simplify, differentiate, integrate, expand, factor, evaluate). Use this to discover what operations this server supports.",
+        input_schema: %{"type" => "object", "properties" => %{}, "required" => []}
+      }
+    }
   end
 
-  defp validate_config(config) do
-    case Map.get(config, "timeout_ms") do
-      nil ->
-        # Timeout is optional, so nil is valid
-        {:ok, %{}}
-
-      timeout when is_integer(timeout) and timeout >= 100 and timeout <= 300_000 ->
-        {:ok, %{timeout_ms: timeout}}
-
-      timeout when is_integer(timeout) ->
-        {:error, "timeout_ms must be between 100 and 300000 milliseconds"}
-
-      _ ->
-        {:error, "timeout_ms must be an integer"}
-    end
-  end
-
-  # Tool call handlers
   @impl true
+  def init(_opts) do
+    {:ok, %{}}
+  end
+
+  @impl true
+  def handle_call({:execute_tool, tool_name, arguments}, _from, state) do
+    case handle_tool_call(tool_name, arguments, state) do
+      {:ok, result, new_state} -> {:reply, {:ok, result}, new_state}
+      {:error, reason, new_state} -> {:reply, {:error, reason}, new_state}
+    end
+  end
+
   def handle_tool_call(tool_name, args, state) do
     case tool_name do
       "sympy_solve" ->
@@ -334,7 +183,6 @@ defmodule SympyMcp.NativeService do
 
       "sympy_evaluate" ->
         substitutions = Map.get(args, "substitutions", %{})
-
         handle_sympy_operation(
           &SympyMcp.SympyTools.evaluate/2,
           [args["expression"], substitutions],
@@ -342,134 +190,46 @@ defmodule SympyMcp.NativeService do
           state
         )
 
+      "sympy_list_operations" ->
+        handle_list_operations(state)
+
       _ ->
         {:error, "Tool not found: #{tool_name}", state}
     end
   end
 
-  # Helper function to reduce code duplication in tool handlers
+  defp handle_list_operations(state) do
+    operations = [
+      "sympy_solve",
+      "sympy_simplify",
+      "sympy_differentiate",
+      "sympy_integrate",
+      "sympy_expand",
+      "sympy_factor",
+      "sympy_evaluate"
+    ]
+    body = Jason.encode!(%{"operations" => operations})
+    {:ok, %{"content" => [%{"type" => "text", "text" => body}], "isError" => false}, state}
+  end
+
   defp handle_sympy_operation(function, args, operation_description, state) do
     case apply(function, args) do
       {:ok, result} ->
-        {:ok, %{content: [text("#{String.capitalize(operation_description)} result: #{result}")]}, state}
+        text = format_sympy_result(operation_description, result)
+        {:ok, %{"content" => [%{"type" => "text", "text" => text}], "isError" => false}, state}
 
       {:error, reason} ->
         {:error, "Failed to #{operation_description}: #{reason}", state}
     end
   end
 
-  # Prompt handler
-  @impl true
-  def handle_prompt_get("symbolic_math_helper", args, state) do
-    operation = Map.get(args, "operation", "simplify")
-    expression = Map.get(args, "expression", "")
-    variable = Map.get(args, "variable")
-    substitutions = Map.get(args, "substitutions")
-
-    guidance = build_operation_guidance(operation, expression, variable, substitutions)
-
-    messages = [
-      system(
-        "You are a helpful assistant for symbolic mathematics using SymPy. Guide users on how to use the available tools."
-      ),
-      user(
-        "I want to #{operation} the expression: #{expression}#{if variable, do: " with variable #{variable}", else: ""}"
-      ),
-      assistant(
-        "#{guidance}\n\nAll SymPy tools are read-only, non-destructive, and idempotent - you can safely call them multiple times with the same inputs."
-      )
-    ]
-
-    {:ok, %{messages: messages}, state}
+  defp format_sympy_result(operation_description, result) when is_list(result) do
+    # solve returns a list of solution strings; show them clearly
+    formatted = Enum.join(result, ", ")
+    "#{String.capitalize(operation_description)} result: #{formatted}"
   end
 
-  # Resource handler
-  @impl true
-  def handle_resource_read("sympy://examples", _uri, state) do
-    examples = %{
-      "basic_expressions" => [
-        "x**2 + 2*x + 1",
-        "sin(x) + cos(x)",
-        "exp(x) * log(x)"
-      ],
-      "equations" => [
-        "x**2 - 4 = 0",
-        "x**2 + y**2 = 1",
-        "x**3 - 1 = 0"
-      ],
-      "derivatives" => [
-        "x**2",
-        "sin(x)",
-        "exp(x) * log(x)"
-      ],
-      "integrals" => [
-        "x**2",
-        "1/x",
-        "exp(-x**2)"
-      ]
-    }
-
-    content = [
-      text("""
-      SymPy Example Expressions
-
-      These are common expressions you can use to test SymPy operations:
-
-      Basic Expressions:
-      #{Enum.join(examples["basic_expressions"], "\n      ")}
-
-      Equations (for solving):
-      #{Enum.join(examples["equations"], "\n      ")}
-
-      Expressions for Differentiation:
-      #{Enum.join(examples["derivatives"], "\n      ")}
-
-      Expressions for Integration:
-      #{Enum.join(examples["integrals"], "\n      ")}
-
-      Use these examples with the appropriate SymPy tools to perform symbolic mathematics operations.
-      """)
-    ]
-
-    {:ok, content, state}
-  end
-
-  # Prompt handler
-  defp build_operation_guidance(operation, expression, variable, substitutions) do
-    # Build a map of operation guidance functions for better performance and maintainability
-    guidance_map = %{
-      "solve" => fn ->
-        "To solve the equation #{expression} for #{variable || "a variable"}, use the sympy_solve tool with the equation and variable parameters."
-      end,
-      "simplify" => fn ->
-        "To simplify the expression #{expression}, use the sympy_simplify tool with the expression parameter."
-      end,
-      "differentiate" => fn ->
-        "To differentiate #{expression} with respect to #{variable || "a variable"}, use the sympy_differentiate tool with the expression and variable parameters."
-      end,
-      "integrate" => fn ->
-        "To integrate #{expression} with respect to #{variable || "a variable"}, use the sympy_integrate tool with the expression and variable parameters."
-      end,
-      "expand" => fn ->
-        "To expand the expression #{expression}, use the sympy_expand tool with the expression parameter."
-      end,
-      "factor" => fn ->
-        "To factor the expression #{expression}, use the sympy_factor tool with the expression parameter."
-      end,
-      "evaluate" => fn ->
-        subs_text = if substitutions, do: " with substitutions #{substitutions}", else: ""
-
-        "To evaluate #{expression}#{subs_text}, use the sympy_evaluate tool with the expression#{if substitutions, do: " and substitutions", else: ""} parameters."
-      end
-    }
-
-    # Use Map.get with a default fallback for unknown operations
-    case Map.get(guidance_map, operation) do
-      nil ->
-        "Available operations: solve, simplify, differentiate, integrate, expand, factor, and evaluate. Use the appropriate tool for your operation."
-
-      guidance_fn ->
-        guidance_fn.()
-    end
+  defp format_sympy_result(operation_description, result) do
+    "#{String.capitalize(operation_description)} result: #{result}"
   end
 end
